@@ -2,7 +2,8 @@
 
 Target: an internet-facing **Ubuntu 24.04 LTS** VM with a public domain and
 HTTPS. For running the app on a workstation, see
-[LOCAL_SETUP.md](LOCAL_SETUP.md) instead.
+[LOCAL_SETUP.md](LOCAL_SETUP.md); for a private development VM reached over
+an SSH tunnel, see [DEPLOYMENT_DEV.md](DEPLOYMENT_DEV.md).
 
 The result is the conventional Frappe production topology:
 
