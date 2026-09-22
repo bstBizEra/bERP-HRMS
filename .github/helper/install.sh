@@ -11,6 +11,15 @@ sudo apt install libcups2-dev redis-server mariadb-client libmariadb-dev
 pip install frappe-bench
 
 githubbranch=${GITHUB_BASE_REF:-${GITHUB_REF##*/}}
+
+# This fork's default branch is `main`, and it tracks upstream `develop`.
+# The upstream Frappe repositories have no `main` branch, so deriving the
+# dependency branches from ours would clone a ref that does not exist and
+# abort the job (set -e) before any test runs.
+if [ "$githubbranch" = "main" ]; then
+    githubbranch="develop"
+fi
+
 frappeuser=${FRAPPE_USER:-"frappe"}
 frappebranch=${FRAPPE_BRANCH:-$githubbranch}
 erpnextbranch=${ERPNEXT_BRANCH:-$githubbranch}
