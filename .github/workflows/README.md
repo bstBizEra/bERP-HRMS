@@ -37,8 +37,9 @@ these — they encode upstream's branch names, registries and repository.
 
 ## The `main` / `develop` mapping
 
-`.github/helper/install.sh` derives the branch of `frappe`, `erpnext` and
-`payments` to clone from the branch under test:
+Two places derive an upstream branch from the branch under test.
+`.github/helper/install.sh` picks the branch of `frappe`, `erpnext` and
+`payments` to clone:
 
 ```sh
 githubbranch=${GITHUB_BASE_REF:-${GITHUB_REF##*/}}
@@ -50,8 +51,14 @@ have a `main` branch** — so without a mapping CI clones a ref that does not
 exist, `set -e` aborts, and every job dies during setup before a single test
 runs. The installer therefore maps `main` to `develop`.
 
-`version-*` branches pass through untouched, so release branches keep working
-if any are added later.
+`patch.yml` does the same thing again in its "Updating to latest version"
+step, fetching `${GITHUB_BASE_REF}` from `frappe/frappe`, and carries the
+same mapping.
+
+`version-*` branches pass through untouched in both places, so release
+branches keep working if any are added later. (`ci.yml` also sets an
+`HR_BRANCH` environment variable from `github.base_ref`, but nothing reads
+it; it is left as inherited.)
 
 ## Merging from upstream
 

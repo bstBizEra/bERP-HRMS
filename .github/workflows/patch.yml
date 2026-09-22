@@ -151,7 +151,14 @@ jobs:
           update_to_version 16 3.14
 
           echo "Updating to latest version"
-          git -C "apps/frappe" fetch --depth 1 upstream "${GITHUB_BASE_REF:-${GITHUB_REF##*/}}"
+          # This fork's default branch is `main` and tracks upstream `develop`.
+          # `upstream` here is frappe/frappe, which has no `main` branch, so
+          # fetching the branch name verbatim aborts the step.
+          upstream_branch="${GITHUB_BASE_REF:-${GITHUB_REF##*/}}"
+          if [ "$upstream_branch" = "main" ]; then
+            upstream_branch="develop"
+          fi
+          git -C "apps/frappe" fetch --depth 1 upstream "$upstream_branch"
           git -C "apps/frappe" checkout -q -f FETCH_HEAD
           git -C "apps/erpnext" checkout -q -f FETCH_HEAD
           git -C "apps/hrms" checkout -q -f "$GITHUB_SHA"
