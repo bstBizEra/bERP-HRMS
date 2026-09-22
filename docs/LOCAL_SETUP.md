@@ -4,6 +4,9 @@ This app is a Frappe application. It does not run on its own — it needs the
 Frappe framework, an ERPNext install, MariaDB and Redis. The two supported
 ways to get there are below.
 
+> Deploying to a server rather than a workstation? See
+> [DEPLOYMENT.md](DEPLOYMENT.md) — nginx, supervisor, TLS and a firewall.
+
 Everything here was derived from a clean Ubuntu 24.04 provision; the version
 pins are load-bearing and the reasons are in [Toolchain requirements](#toolchain-requirements).
 
