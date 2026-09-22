@@ -32,6 +32,45 @@ Every value is overridable by environment variable — `BERP_USER`,
 `BERP_HOME`, `BENCH_DIR`, `SECRETS_DIR`, `SITE_NAME`, `APP_PORT`,
 `SSH_PORT`, `SERVICE_NAME`.
 
+## The app stack
+
+| App | Source | Branch | Override |
+|---|---|---|---|
+| `frappe` | `frappe/frappe` | `develop` | `FRAPPE_BRANCH` |
+| `erpnext` | **`bstBizEra/bERP`** | `dev_branding_lao_hrms_crm` | `BERP_REPO` / `BERP_BRANCH` |
+| `hrms` | `bstBizEra/bERP-HRMS` | `main` | `HRMS_REPO` / `HRMS_BRANCH` |
+| `crm` | `bstBizEra/bERP-CRM` | `main` | `CRM_REPO` / `CRM_BRANCH` |
+| `berp_branding` | subdirectory of `bERP` | same as `erpnext` | `BERP_SUBAPPS` |
+| `berp_lao` | subdirectory of `bERP` | same as `erpnext` | `BERP_SUBAPPS` |
+
+**`bERP` is ERPNext.** Its `pyproject.toml` declares `name = "erpnext"`, so it
+occupies the bench's `erpnext` app slot. Installing upstream `frappe/erpnext`
+instead produces a bench without the bERP base — and the two cannot coexist,
+because they are the same app. This is why `deploy-dev.sh` calls
+`setup-bench.sh` with `BENCH_ONLY=1` and installs the apps itself:
+`setup-bench.sh` would otherwise fetch upstream ERPNext.
+
+`berp_branding` and `berp_lao` are subdirectories of the bERP repository, not
+repositories of their own, and `bench get-app` cannot clone a subdirectory.
+They are copied into `apps/` with `rsync` and then `pip install -e`'d — the
+same approach `scripts/deploy/berp_deploy.sh` uses in the bERP repo. Install
+order puts `erpnext` first, since both declare it in `required_apps`.
+
+### Relationship to `berp_deploy.sh`
+
+The bERP repository has its own delivery pipeline for the two custom apps. It
+targets an *existing* bench and defaults to `BENCH=/home/frappe/frappe-bench`,
+so point it at this one explicitly:
+
+```bash
+BENCH=/srv/berp/deployments/dev ./scripts/deploy/berp_deploy.sh \
+  --site dev.berp.bizera.la --source <release-tree> --apps berp_branding,berp_lao
+```
+
+`deploy-dev.sh` provisions the bench; `berp_deploy.sh` ships subsequent
+changes to the custom apps onto it, with backup and rollback. They are
+complementary, not alternatives.
+
 ## Deploy
 
 ```bash
@@ -167,7 +206,9 @@ on the unit's `PATH`.
 ## Status
 
 The bench provisioning this delegates to (`scripts/setup-bench.sh`) is the
-sequence that produced a verified working instance. The layers this script
-adds on top — systemd unit, port configuration, firewall assertions — have
-not yet been run end-to-end on a real VM. Treat the first run as a test, and
-snapshot beforehand.
+sequence that produced a verified working instance, though that instance ran
+upstream ERPNext rather than bERP.
+
+Not yet run end-to-end on a VM: the bERP app assembly above, the systemd unit,
+the port configuration and the firewall assertions. Treat the first run as a
+test, and snapshot beforehand.

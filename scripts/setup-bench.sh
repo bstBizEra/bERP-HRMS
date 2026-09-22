@@ -136,6 +136,17 @@ else
 	echo "Bench already present, skipping init"
 fi
 
+if [[ "${BENCH_ONLY:-0}" == "1" ]]; then
+	log "BENCH_ONLY=1 - stopping after bench init"
+	cat <<EOF
+
+  Bench:  ${BENCH_DIR}
+  Apps and site were NOT created. The caller installs them.
+
+EOF
+	exit 0
+fi
+
 log "Installing erpnext (hrms declares it in required_apps)"
 if [[ ! -d "${BENCH_DIR}/apps/erpnext" ]]; then
 	su - "${BENCH_USER}" -c "cd '${BENCH_DIR}' && bench get-app --skip-assets --branch '${ERPNEXT_BRANCH}' erpnext"

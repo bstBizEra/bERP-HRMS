@@ -81,12 +81,40 @@ fi
 # ---------------------------------------------------------------------------
 # Base bench
 # ---------------------------------------------------------------------------
-log "Provisioning the bench (delegating to setup-bench.sh)"
+# BENCH_ONLY stops setup-bench.sh after `bench init`: it would otherwise
+# install upstream frappe/erpnext, which is the wrong platform. bstBizEra/bERP
+# is a fork of ERPNext declaring `name = "erpnext"`, so it occupies that same
+# app slot and the two cannot coexist.
+log "Provisioning the bench (delegating to setup-bench.sh, apps excluded)"
+BENCH_ONLY=1 \
 SITE_NAME="${SITE_NAME}" \
 ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
 DB_ROOT_PASSWORD="${DB_ROOT_PASSWORD}" \
 BENCH_USER="${BENCH_USER}" \
 	"${REPO_ROOT}/scripts/setup-bench.sh"
+
+# ---------------------------------------------------------------------------
+# Apps and site
+# ---------------------------------------------------------------------------
+# Shared with deploy-dev.sh so the two benches cannot drift. A production
+# bench differing from the one changes were tested against is precisely the
+# failure this shared path exists to prevent.
+# The shared installer defaults BERP_BRANCH to a development branch. Silently
+# shipping that to production is exactly the mistake worth failing on, so the
+# branch must be named here.
+[[ -n "${BERP_BRANCH:-}" ]] || die "Set BERP_BRANCH explicitly for production (e.g. BERP_BRANCH=main). The installer's default is a development branch."
+
+log "Assembling the bERP app stack (bERP @ ${BERP_BRANCH})"
+BENCH_USER="${BENCH_USER}" \
+BENCH_DIR="${BENCH_DIR}" \
+SITE_NAME="${SITE_NAME}" \
+ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
+DB_ROOT_PASSWORD="${DB_ROOT_PASSWORD}" \
+BERP_REPO="${BERP_REPO:-}" BERP_BRANCH="${BERP_BRANCH:-}" \
+HRMS_REPO="${HRMS_REPO:-}" HRMS_BRANCH="${HRMS_BRANCH:-}" \
+CRM_REPO="${CRM_REPO:-}" CRM_BRANCH="${CRM_BRANCH:-}" \
+BERP_SUBAPPS="${BERP_SUBAPPS:-}" \
+	"${REPO_ROOT}/scripts/install-berp-apps.sh"
 
 # ---------------------------------------------------------------------------
 # Production services

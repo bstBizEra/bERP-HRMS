@@ -29,6 +29,23 @@ SERVICE_NAME="${SERVICE_NAME:-berp-dev}"
 SKIP_FIREWALL="${SKIP_FIREWALL:-0}"
 SKIP_SERVICE="${SKIP_SERVICE:-0}"
 
+# The bERP platform. bstBizEra/bERP is a fork of ERPNext - its pyproject
+# declares `name = "erpnext"` - so it occupies the bench's `erpnext` app slot.
+# Installing upstream frappe/erpnext instead would give a bench without the
+# bERP base, and the two cannot coexist: they are the same app.
+BERP_REPO="${BERP_REPO:-https://github.com/bstBizEra/bERP.git}"
+BERP_BRANCH="${BERP_BRANCH:-dev_branding_lao_hrms_crm}"
+HRMS_REPO="${HRMS_REPO:-https://github.com/bstBizEra/bERP-HRMS.git}"
+HRMS_BRANCH="${HRMS_BRANCH:-main}"
+CRM_REPO="${CRM_REPO:-https://github.com/bstBizEra/bERP-CRM.git}"
+CRM_BRANCH="${CRM_BRANCH:-main}"
+
+# Apps that live as subdirectories of the bERP repo rather than as their own
+# repositories. bench get-app cannot clone a subdirectory, so these are copied
+# into apps/ and pip-installed - the same approach scripts/deploy/berp_deploy.sh
+# uses in the bERP repo.
+BERP_SUBAPPS="${BERP_SUBAPPS:-berp_branding berp_lao}"
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 log()  { printf '\n\033[1;34m==>\033[0m %s\n' "$*"; }
@@ -96,7 +113,10 @@ chown "${BERP_USER}:${BERP_USER}" "${BERP_HOME}"
 # ---------------------------------------------------------------------------
 # setup-bench.sh runs `cd $BENCH_HOME && bench init $(basename $BENCH_DIR)`,
 # so BENCH_HOME must be the PARENT of the deployment directory.
-log "Provisioning the bench (delegating to setup-bench.sh)"
+# BENCH_ONLY stops setup-bench.sh after `bench init`: it would otherwise
+# install upstream frappe/erpnext, which is the wrong platform here.
+log "Provisioning the bench (delegating to setup-bench.sh, apps excluded)"
+BENCH_ONLY=1 \
 BENCH_USER="${BERP_USER}" \
 BENCH_HOME="$(dirname "${BENCH_DIR}")" \
 BENCH_DIR="${BENCH_DIR}" \
@@ -104,6 +124,23 @@ SITE_NAME="${SITE_NAME}" \
 ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
 DB_ROOT_PASSWORD="${DB_ROOT_PASSWORD}" \
 	"${REPO_ROOT}/scripts/setup-bench.sh"
+
+# ---------------------------------------------------------------------------
+# Apps and site
+# ---------------------------------------------------------------------------
+# Shared with deploy-production.sh so the two benches cannot drift.
+log "Assembling the bERP app stack"
+BENCH_USER="${BERP_USER}" \
+BENCH_DIR="${BENCH_DIR}" \
+SITE_NAME="${SITE_NAME}" \
+ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
+DB_ROOT_PASSWORD="${DB_ROOT_PASSWORD}" \
+SRC_DIR="${BERP_HOME}/src" \
+BERP_REPO="${BERP_REPO}" BERP_BRANCH="${BERP_BRANCH}" \
+HRMS_REPO="${HRMS_REPO}" HRMS_BRANCH="${HRMS_BRANCH}" \
+CRM_REPO="${CRM_REPO}" CRM_BRANCH="${CRM_BRANCH}" \
+BERP_SUBAPPS="${BERP_SUBAPPS}" \
+	"${REPO_ROOT}/scripts/install-berp-apps.sh"
 
 # ---------------------------------------------------------------------------
 # Bench configuration
