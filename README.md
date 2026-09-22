@@ -11,6 +11,12 @@
 > - **License:** GNU General Public License v3 — see [`license.txt`](license.txt). All
 >   original copyright remains with the Frappe Technologies Pvt. Ltd. and the upstream
 >   contributors. Any derivative work in this repository remains GPL-3.0 licensed.
+> - **Attribution and modification log:** [`NOTICE`](NOTICE) — the exact upstream commit,
+>   the `frappe-ui` submodule pin, why this module tracks the develop lane, and every file
+>   bERP added, removed or changed. No file under `hrms/` is modified.
+> - **Security baseline:** [`docs/SECURITY-BASELINE.md`](docs/SECURITY-BASELINE.md) — the
+>   inherited-findings policy and a static-analysis inventory of the imported tree. Note
+>   that a passing `Linters` check means no *new* findings, not a clean tree.
 >
 > ### Syncing with upstream
 >
