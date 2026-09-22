@@ -73,14 +73,36 @@ and compiles assets.
 | `SSH_PORT` | `22` | Allowed through `ufw` before it is enabled |
 | `SKIP_TLS` | `0` | `1` serves plain HTTP and skips the DNS check |
 | `SKIP_FIREWALL` | `0` | `1` leaves `ufw` alone |
+| `BERP_BRANCH` | *(required)* | Branch of `bstBizEra/bERP` to deploy |
+| `BERP_REPO` | `bstBizEra/bERP` | The bERP platform repository |
+| `HRMS_REPO` / `HRMS_BRANCH` | `bstBizEra/bERP-HRMS` / `main` | |
+| `CRM_REPO` / `CRM_BRANCH` | `bstBizEra/bERP-CRM` / `main` | |
+| `BERP_SUBAPPS` | `berp_branding berp_lao` | Apps living inside the bERP repo |
+
+**`BERP_BRANCH` is required here and has no default.** The shared installer
+defaults it to a *development* branch, and silently shipping that to
+production is the mistake worth failing on:
+
+```bash
+sudo DOMAIN=hr.example.com ADMIN_EMAIL=ops@example.com \
+     BERP_BRANCH=main ./scripts/deploy-production.sh
+```
+
+**bERP is ERPNext.** `bstBizEra/bERP`'s `pyproject.toml` declares
+`name = "erpnext"`, so it occupies the bench's `erpnext` app slot. Upstream
+`frappe/erpnext` is never installed — the two are the same app and cannot
+coexist. See [DEPLOYMENT_DEV.md](DEPLOYMENT_DEV.md#the-app-stack) for the full
+stack.
 
 The script refuses to run with a well-known or short password on an
 internet-facing host. That guard is deliberate — do not work around it.
 
 ## What it does
 
-1. Provisions the bench via `scripts/setup-bench.sh` (Python 3.14, Node 24,
-   MariaDB, Redis, erpnext + hrms, site creation).
+1. Provisions the bench via `scripts/setup-bench.sh` with `BENCH_ONLY=1`
+   (Python 3.14, Node 24, MariaDB, Redis), then assembles the bERP app stack
+   and creates the site via `scripts/install-berp-apps.sh` — the same shared
+   installer `deploy-dev.sh` uses, so the two benches cannot drift.
 2. Installs nginx and supervisor, and generates their configuration with
    `bench setup nginx` / `bench setup supervisor`.
 3. Removes nginx's default site, which would otherwise shadow ours on :80.

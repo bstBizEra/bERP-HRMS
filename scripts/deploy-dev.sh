@@ -126,79 +126,21 @@ DB_ROOT_PASSWORD="${DB_ROOT_PASSWORD}" \
 	"${REPO_ROOT}/scripts/setup-bench.sh"
 
 # ---------------------------------------------------------------------------
-# Apps
+# Apps and site
 # ---------------------------------------------------------------------------
-as_berp() { su - "${BERP_USER}" -c "$1"; }
-
-SRC_DIR="${BERP_HOME}/src"
-as_berp "mkdir -p '${SRC_DIR}'"
-
-get_git_app() {
-	# $1 app name (must match the Python package), $2 repo url, $3 branch
-	local app="$1" url="$2" branch="$3" stage="${SRC_DIR}/$1"
-	if [[ -d "${BENCH_DIR}/apps/${app}" ]]; then
-		echo "apps/${app} already present, skipping"
-		return 0
-	fi
-	# Staged under a directory named for the app: bench get-app takes the app
-	# name from the directory basename, so cloning bERP.git directly would
-	# register an app called "bERP" that then fails to import.
-	as_berp "rm -rf '${stage}' && git clone -q --depth 1 --branch '${branch}' '${url}' '${stage}'"
-	as_berp "cd '${BENCH_DIR}' && bench get-app --skip-assets '${stage}'"
-	as_berp "cd '${BENCH_DIR}/apps/${app}' && git remote set-url origin '${url}'"
-}
-
-log "Installing erpnext from bERP (${BERP_BRANCH})"
-get_git_app erpnext "${BERP_REPO}" "${BERP_BRANCH}"
-
-log "Installing hrms (${HRMS_BRANCH})"
-get_git_app hrms "${HRMS_REPO}" "${HRMS_BRANCH}"
-
-log "Installing crm (${CRM_BRANCH})"
-get_git_app crm "${CRM_REPO}" "${CRM_BRANCH}"
-
-log "Installing bERP sub-apps: ${BERP_SUBAPPS}"
-# These live inside the bERP repo, so reuse the erpnext checkout rather than
-# cloning it again.
-BERP_SRC="${BENCH_DIR}/apps/erpnext"
-command -v rsync >/dev/null || apt-get install -y -qq rsync
-for app in ${BERP_SUBAPPS}; do
-	[[ -f "${BERP_SRC}/${app}/pyproject.toml" ]] \
-		|| die "${BERP_SRC}/${app} is not an app (no pyproject.toml) - is ${BERP_BRANCH} the right branch?"
-	[[ -f "${BERP_SRC}/${app}/${app}/hooks.py" ]] \
-		|| die "${BERP_SRC}/${app}/${app}/hooks.py missing - wrong tree?"
-
-	as_berp "mkdir -p '${BENCH_DIR}/apps/${app}'"
-	as_berp "rsync -a --delete --exclude '.git' --exclude '__pycache__' --exclude 'node_modules' \
-		'${BERP_SRC}/${app}/' '${BENCH_DIR}/apps/${app}/'"
-	as_berp "'${BENCH_DIR}/env/bin/pip' install --quiet --upgrade -e '${BENCH_DIR}/apps/${app}'"
-	# bench reads apps.txt to know what exists; get-app would have written it.
-	as_berp "grep -qxF '${app}' '${BENCH_DIR}/sites/apps.txt' 2>/dev/null \
-		|| echo '${app}' >> '${BENCH_DIR}/sites/apps.txt'"
-done
-
-# ---------------------------------------------------------------------------
-# Site
-# ---------------------------------------------------------------------------
-log "Creating site ${SITE_NAME}"
-if [[ ! -d "${BENCH_DIR}/sites/${SITE_NAME}" ]]; then
-	as_berp "cd '${BENCH_DIR}' && bench new-site '${SITE_NAME}' \
-		--db-root-username root \
-		--db-root-password '${DB_ROOT_PASSWORD}' \
-		--admin-password '${ADMIN_PASSWORD}' \
-		--set-default"
-fi
-
-# erpnext first: berp_branding and berp_lao both declare it in required_apps.
-log "Installing apps onto ${SITE_NAME}"
-for app in erpnext hrms crm ${BERP_SUBAPPS}; do
-	as_berp "cd '${BENCH_DIR}' && bench --site '${SITE_NAME}' list-apps | grep -qw '${app}'" \
-		&& { echo "${app} already installed on the site"; continue; }
-	as_berp "cd '${BENCH_DIR}' && bench --site '${SITE_NAME}' install-app '${app}'"
-done
-
-log "Building assets"
-as_berp "cd '${BENCH_DIR}' && bench build"
+# Shared with deploy-production.sh so the two benches cannot drift.
+log "Assembling the bERP app stack"
+BENCH_USER="${BERP_USER}" \
+BENCH_DIR="${BENCH_DIR}" \
+SITE_NAME="${SITE_NAME}" \
+ADMIN_PASSWORD="${ADMIN_PASSWORD}" \
+DB_ROOT_PASSWORD="${DB_ROOT_PASSWORD}" \
+SRC_DIR="${BERP_HOME}/src" \
+BERP_REPO="${BERP_REPO}" BERP_BRANCH="${BERP_BRANCH}" \
+HRMS_REPO="${HRMS_REPO}" HRMS_BRANCH="${HRMS_BRANCH}" \
+CRM_REPO="${CRM_REPO}" CRM_BRANCH="${CRM_BRANCH}" \
+BERP_SUBAPPS="${BERP_SUBAPPS}" \
+	"${REPO_ROOT}/scripts/install-berp-apps.sh"
 
 # ---------------------------------------------------------------------------
 # Bench configuration
