@@ -5,7 +5,9 @@ Frappe framework, an ERPNext install, MariaDB and Redis. The two supported
 ways to get there are below.
 
 > Deploying to a server rather than a workstation? See
-> [DEPLOYMENT.md](DEPLOYMENT.md) — nginx, supervisor, TLS and a firewall.
+> [DEPLOYMENT.md](DEPLOYMENT.md) for a public, TLS-terminated deployment, or
+> [DEPLOYMENT_DEV.md](DEPLOYMENT_DEV.md) for a private development VM reached
+> over an SSH tunnel.
 
 Everything here was derived from a clean Ubuntu 24.04 provision; the version
 pins are load-bearing and the reasons are in [Toolchain requirements](#toolchain-requirements).
