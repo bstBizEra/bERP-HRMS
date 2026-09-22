@@ -1,0 +1,120 @@
+bERP HRMS
+Copyright (c) bstBizEra
+
+================================================================================
+UPSTREAM ATTRIBUTION
+================================================================================
+
+This product is a derivative work of Frappe HR.
+
+    Project:    Frappe HR (frappe/hrms)
+    Copyright:  Frappe Technologies Pvt. Ltd.
+    Source:     https://github.com/frappe/hrms
+    Homepage:   https://frappe.io/hr
+    Licence:    GNU General Public License v3.0
+
+This repository was imported from the upstream project at:
+
+    Commit:     32a4d00976b85d65382674e41e4d9548780f4a3a
+    Dated:      2026-09-18
+    Lane:       develop
+    Version:    17.0.0-dev
+
+The import preserved upstream's full commit history rather than squashing it:
+commit 5cd0a8fa is a merge of this repository's initial commit with the
+upstream tip above, so `git log` on any upstream file still shows its real
+authorship.
+
+================================================================================
+WHY THE DEVELOP LANE
+================================================================================
+
+bERP HRMS tracks upstream's develop lane, and this is deliberate.
+
+bstBizEra/bERP is a fork of ERPNext whose pyproject declares name = "erpnext",
+so it occupies the bench's erpnext application slot, and it requires
+frappe >=17.0.0-dev,<18.0.0. Every bERP bench is therefore a Frappe 17-dev
+bench. This module's frappe >=17.0.0-dev,<18.0.0 and erpnext
+>=17.0.0-dev,<18.0.0 match it, as does bstBizEra/bERP-CRM.
+
+Upstream's stable lane (version-16, 16.19.0) requires frappe >=16.0.0,<17.0.0
+and erpnext >=16.0.0,<17.0.0. bench compares these with semantic_version, and a
+`<17.0.0` bound excludes the 17.0.0-dev prerelease, so the stable lane cannot be
+installed onto a bERP bench while the bERP fork holds the erpnext slot.
+
+The trade-off is real: this module is pinned to a moving, unreleased upstream
+branch and can break when upstream develop moves. That risk is inherent to the
+platform rather than to this module, and it resolves when the whole bERP stack
+moves to a released Frappe together.
+
+================================================================================
+LICENCE
+================================================================================
+
+Frappe HR is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+The full licence text is included in the license.txt file at the root of this
+repository.
+
+Note that this is the GPL-3.0, not the AGPL-3.0 that covers bstBizEra/bERP-CRM.
+The GPL's obligations attach to DISTRIBUTION of the software or of modified
+versions. It has no equivalent of AGPL section 13, so running a modified version
+as a network service, without distributing it, does not by itself oblige you to
+offer the corresponding source to its users.
+
+================================================================================
+BUNDLED COMPONENTS
+================================================================================
+
+frappe-ui
+    Source:   https://github.com/frappe/frappe-ui
+    Included: as a git submodule at ./frappe-ui
+    Commit:   863eaae9ada2edb287fc09fb21d05212bb5eebe9
+    Copyright: Frappe Technologies Pvt. Ltd.
+
+This module additionally depends on the Frappe Framework
+(https://github.com/frappe/frappe) and on ERPNext, which in a bERP deployment is
+bstBizEra/bERP. Both are installed and managed by bench and are not vendored in
+this repository.
+
+================================================================================
+MODIFICATIONS FROM UPSTREAM
+================================================================================
+
+No file under hrms/ is modified. The application source is upstream's.
+
+  Added -- deployment and setup tooling, none of which exists upstream:
+      scripts/setup-bench.sh          Local bench provisioning
+      scripts/install-berp-apps.sh    Shared app assembly: erpnext (bERP), hrms,
+                                      crm, berp_branding, berp_lao
+      scripts/deploy-dev.sh           Private development VM, reached over SSH
+      scripts/deploy-production.sh    Ubuntu 24.04 VM behind nginx with TLS
+      docs/LOCAL_SETUP.md
+      docs/DEPLOYMENT.md
+      docs/DEPLOYMENT_DEV.md
+      docker/Dockerfile
+      .github/workflows/README.md
+      NOTICE, docs/SECURITY-BASELINE.md
+
+  Removed -- eight workflows that operated upstream's project rather than this
+  one, three of which held contents: write:
+      build-and-commit-assets.yml     initiate_release.yml
+      build_image.yml                 on_release.yml
+      generate-pot-file.yml           release_notes.yml
+      review-translation-changes.yaml stale.yml
+
+  Modified:
+      .github/helper/install.sh       Resolve upstream dependency branches from
+      .github/workflows/patch.yml     this repository's branch names. No upstream
+                                      Frappe repository has a `main` branch, so
+                                      both map main -> develop.
+      README.md                       bERP module documentation
+      docker/docker-compose.yml       Install hrms from this repository rather
+      docker/init.sh                  than cloning upstream

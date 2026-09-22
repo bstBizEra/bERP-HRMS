@@ -54,6 +54,9 @@ misleading, because the framework this depends on will not build below 3.14.
 
 - **Source:** https://github.com/frappe/hrms (branch `develop`)
 - **Imported at:** upstream commit [`32a4d0097`](https://github.com/frappe/hrms/commit/32a4d0097)
+- **Attribution and modification log:** [`NOTICE`](NOTICE) — the exact upstream commit, the
+  `frappe-ui` submodule pin, why this module tracks the develop lane rather than upstream's
+  stable one, and every file bERP added, removed or changed. Nothing under `hrms/` is modified.
 
 Full upstream history is preserved, so releases merge normally:
 
@@ -65,6 +68,16 @@ git merge upstream/develop
 
 Do that on a branch and let it go through review — never merge upstream directly
 on a server.
+
+## Security
+
+Static-analysis findings inherited from the upstream import are triaged separately from
+findings introduced by bERP's own changes. The policy, and an inventory of the imported
+tree, are in [`docs/SECURITY-BASELINE.md`](docs/SECURITY-BASELINE.md); triage is tracked in
+[#7](https://github.com/bstBizEra/bERP-HRMS/issues/7).
+
+Note that `semgrep ci` baselines against a pull request's base branch, so **a passing
+`Frappe Linter` check means no *new* findings, not a clean tree.**
 
 ## Licence
 
