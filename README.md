@@ -1,33 +1,95 @@
 # bERP-HRMS
 
-> **Downstream copy of [frappe/hrms](https://github.com/frappe/hrms).**
->
-> This repository is a full-history copy of Frappe HR, imported to serve as the HRMS
-> component of the bERP platform. All upstream commit history is preserved, so upstream
-> changes can be merged in directly.
->
-> - **Upstream:** https://github.com/frappe/hrms (branch `develop`)
-> - **Imported at:** upstream commit [`32a4d0097`](https://github.com/frappe/hrms/commit/32a4d0097)
-> - **License:** GNU General Public License v3 — see [`license.txt`](license.txt). All
->   original copyright remains with the Frappe Technologies Pvt. Ltd. and the upstream
->   contributors. Any derivative work in this repository remains GPL-3.0 licensed.
-> - **Attribution and modification log:** [`NOTICE`](NOTICE) — the exact upstream commit,
->   the `frappe-ui` submodule pin, why this module tracks the develop lane, and every file
->   bERP added, removed or changed. No file under `hrms/` is modified.
-> - **Security baseline:** [`docs/SECURITY-BASELINE.md`](docs/SECURITY-BASELINE.md) — the
->   inherited-findings policy and a static-analysis inventory of the imported tree. Note
->   that a passing `Linters` check means no *new* findings, not a clean tree.
->
-> ### Syncing with upstream
->
-> ```bash
-> git remote add upstream https://github.com/frappe/hrms.git   # one-time
-> git fetch upstream develop
-> git merge upstream/develop
-> ```
->
-> Badges and links in the original README below point to the upstream project and
-> reflect upstream's CI status, not this repository's.
+The **HRMS application of the bERP platform** — a downstream copy of
+[frappe/hrms](https://github.com/frappe/hrms), carrying its full upstream history.
+
+## Where this sits
+
+bERP is assembled from several Frappe applications. This repository is one of them:
+
+| App | Repository | Role |
+|---|---|---|
+| `frappe` | [frappe/frappe](https://github.com/frappe/frappe) | Framework |
+| `erpnext` | [bstBizEra/bERP](https://github.com/bstBizEra/bERP) | Platform — **bERP is ERPNext** |
+| **`hrms`** | **this repository** | **HR and Payroll** |
+| `crm` | [bstBizEra/bERP-CRM](https://github.com/bstBizEra/bERP-CRM) | CRM |
+| `berp_branding` | inside `bERP` | Branding |
+| `berp_lao` | inside `bERP` | Lao localisation |
+
+`bstBizEra/bERP` is a fork of ERPNext whose `pyproject.toml` declares
+`name = "erpnext"`, so it occupies the bench's `erpnext` app slot. Upstream
+`frappe/erpnext` is never installed alongside it — they are the same app.
+
+`hrms` also depends on it: `hooks.py` declares
+`required_apps = ["frappe/erpnext"]`, and roughly 108 modules import `erpnext`
+directly.
+
+## Running it
+
+| You want | Read |
+|---|---|
+| A workstation checkout | [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md) |
+| A private dev VM, reached over an SSH tunnel | [docs/DEPLOYMENT_DEV.md](docs/DEPLOYMENT_DEV.md) |
+| A public VM with nginx and TLS | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |
+
+```bash
+sudo ./scripts/deploy-dev.sh          # private development VM
+sudo ./scripts/setup-bench.sh         # bench only, no deployment layer
+```
+
+| Script | Purpose |
+|---|---|
+| `scripts/setup-bench.sh` | System packages, MariaDB, Node 24, Python 3.14, `bench init` |
+| `scripts/install-berp-apps.sh` | Shared app assembly — used by both deployment scripts so they cannot drift |
+| `scripts/deploy-dev.sh` | Private VM: no nginx, no TLS, firewall allows SSH only |
+| `scripts/deploy-production.sh` | Public VM: nginx, Let's Encrypt, requires an explicit `BERP_BRANCH` |
+
+The toolchain pins are load-bearing — **Python 3.14** and **Node ≥ 24** — and are
+hard failures with Ubuntu 24.04 defaults. `pyproject.toml` below advertises
+`requires-python = ">=3.10"`; that value is inherited from upstream and is
+misleading, because the framework this depends on will not build below 3.14.
+[docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md#toolchain-requirements) has the detail.
+
+## Upstream
+
+- **Source:** https://github.com/frappe/hrms (branch `develop`)
+- **Imported at:** upstream commit [`32a4d0097`](https://github.com/frappe/hrms/commit/32a4d0097)
+- **Attribution and modification log:** [`NOTICE`](NOTICE) — the exact upstream commit, the
+  `frappe-ui` submodule pin, why this module tracks the develop lane rather than upstream's
+  stable one, and every file bERP added, removed or changed. Nothing under `hrms/` is modified.
+
+Full upstream history is preserved, so releases merge normally:
+
+```bash
+git remote add upstream https://github.com/frappe/hrms.git   # one-time
+git fetch upstream develop
+git merge upstream/develop
+```
+
+Do that on a branch and let it go through review — never merge upstream directly
+on a server.
+
+## Security
+
+Static-analysis findings inherited from the upstream import are triaged separately from
+findings introduced by bERP's own changes. The policy, and an inventory of the imported
+tree, are in [`docs/SECURITY-BASELINE.md`](docs/SECURITY-BASELINE.md); triage is tracked in
+[#7](https://github.com/bstBizEra/bERP-HRMS/issues/7).
+
+Note that `semgrep ci` baselines against a pull request's base branch, so **a passing
+`Frappe Linter` check means no *new* findings, not a clean tree.**
+
+## Licence
+
+GNU General Public License v3 — see [`license.txt`](license.txt). Copyright
+remains with Frappe Technologies Pvt. Ltd. and the upstream contributors, and any
+derivative work here remains GPL-3.0 licensed. GPL-3.0 is strong copyleft rather
+than permissive: distributing a derivative obliges you to offer its source.
+
+---
+
+*Upstream's README follows unchanged. Its badges and links describe the Frappe HR
+project and reflect upstream's CI, not this repository's.*
 
 ---
 
