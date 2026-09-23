@@ -5,11 +5,14 @@ The **HRMS application of the bERP platform** — a downstream copy of
 
 ## Where this sits
 
-bERP is assembled from several Frappe applications. This repository is one of them:
+bERP is assembled two different ways, and this repository belongs to one of them.
+
+**The development bench** — what `scripts/install-berp-apps.sh` builds, and where
+this module is installed:
 
 | App | Repository | Role |
 |---|---|---|
-| `frappe` | [frappe/frappe](https://github.com/frappe/frappe) | Framework |
+| `frappe` | [frappe/frappe](https://github.com/frappe/frappe) `develop` | Framework |
 | `erpnext` | [bstBizEra/bERP](https://github.com/bstBizEra/bERP) | Platform — **bERP is ERPNext** |
 | **`hrms`** | **this repository** | **HR and Payroll** |
 | `crm` | [bstBizEra/bERP-CRM](https://github.com/bstBizEra/bERP-CRM) | CRM |
@@ -17,8 +20,21 @@ bERP is assembled from several Frappe applications. This repository is one of th
 | `berp_lao` | inside `bERP` | Lao localisation |
 
 `bstBizEra/bERP` is a fork of ERPNext whose `pyproject.toml` declares
-`name = "erpnext"`, so it occupies the bench's `erpnext` app slot. Upstream
-`frappe/erpnext` is never installed alongside it — they are the same app.
+`name = "erpnext"`, so on this bench it occupies the `erpnext` app slot and
+upstream `frappe/erpnext` is not installed beside it — they are the same app.
+Everything above is `17.0.0-dev`.
+
+**The tenant bench** — what customers run, built by `berp_deploy.sh` in
+`bstBizEra/bERP` — **does not hold this module.** It runs released `frappe` v16,
+**upstream** `frappe/erpnext` v16 and **upstream** `frappe/hrms` pinned at
+`version-16`, with `berp_branding` and `berp_lao` on top. That repository's
+[`scripts/deploy/README.md`](https://github.com/bstBizEra/bERP/blob/dev/scripts/deploy/README.md)
+says it directly: *"The ERPNext tree in this repository is 17.0.0-dev. The
+tenants run the released v16 line."*
+
+So a change made here does not reach a customer until the platform's tenant line
+moves to this module. [`NOTICE`](NOTICE) carries the version bounds and why the
+develop lane is the only one installable on the development bench.
 
 `hrms` also depends on it: `hooks.py` declares
 `required_apps = ["frappe/erpnext"]`, and roughly 108 modules import `erpnext`
