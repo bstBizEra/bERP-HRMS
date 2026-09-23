@@ -76,31 +76,165 @@ pull-request-scoped CI view. **58 findings: 16 at ERROR severity, 42 at WARNING.
 All paths are relative to `hrms/`. Every one is unmodified upstream code that ships in
 upstream releases.
 
-## Triage priority
+## Triage verdicts — priorities 1 to 4
 
-1. **`security.frappe-ssti` (9, ERROR)** — server-side template injection. The largest and
-   highest-severity group, and unlike the advisory rules it names a concrete injection class.
-   It touches payroll (`salary_slip`) and leave, which handle employee and salary data.
-2. **`security.frappe-sql-format-injection` (1)** and **`security.frappe-security-file-traversal` (1)**
-   — also concrete injection and traversal classes rather than review prompts.
-3. **`security.guest-whitelisted-method` (4)** — endpoints reachable without authentication.
-   `api/oauth.py` and `api/system_settings.py` warrant the closest look.
-4. **`security.relaxed-permissions` (3)** — DocType permission definitions; check against the
-   access model bERP actually wants.
-5. **The remaining 40** — correctness and maintainability, not security.
+Worked against the imported tree (upstream `32a4d0097`). All 18 `security.*` findings have a
+verdict below. Two carry an action for bERP's deployment, and two could not be settled from
+this repository alone because the deciding behaviour lives in the Frappe framework rather
+than in `hrms/`. Those are marked **VERIFY ON A BENCH** and are the items worth doing first.
 
-This is a materially larger security surface than bERP CRM's, which reports 3 inherited
-findings. HRMS handles payroll and personal employee data, so the gap matters more, not less.
+No file under `hrms/` was modified. Where hardening is wanted it is proposed upstream or
+handled in bERP's own deployment, per the policy above.
 
-## Not a security review
+### Priority 1 — `security.frappe-ssti` (9, ERROR) — ACCEPTED
 
-The counts above are a static-analysis inventory, not a verdict. No finding here has been
-confirmed exploitable, and none has been confirmed safe. Frappe ships all of them, which is
-evidence that upstream considers them acceptable in context — not evidence that they are
-acceptable in bERP's deployment.
+All nine are one construct: `frappe.render_template(<an Email Template field>, <a doc>.as_dict())`.
 
-**This triage should complete before bERP HRMS is exposed to untrusted networks or holds
-production employee or payroll data.** It does not block development or internal deployment.
+| Site | Template selected by |
+| --- | --- |
+| `hr/doctype/exit_interview/exit_interview.py:119` | HR Settings → `exit_questionnaire_notification_template` |
+| `hr/doctype/interview/interview.py:279`, `:330` | Interview Reminder Settings |
+| `hr/doctype/leave_application/leave_application.py:724`, `:725` | HR Settings → `leave_status_notification_template` |
+| `hr/doctype/leave_application/leave_application.py:750`, `:751` | HR Settings → `leave_approval_notification_template` |
+| `payroll/doctype/salary_slip/salary_slip.py:2264`, `:2265` | Payroll Settings → `email_template` |
+
+Each pair is the subject and the body of a single template.
+
+The template SOURCE is an `Email Template` record. The CONTEXT is document fields, which do
+carry employee-entered text — but Jinja renders the template, not the context. A value
+substituted into the output is not itself parsed as template syntax, so **an employee cannot
+inject template code through a leave reason, an interview note or any other field.** That is
+the question the issue asked, and it is the reason all nine are accepted.
+
+What the rule does describe is a privilege escalation for anyone who can write an
+`Email Template`, or repoint one of the Single settings above at a template they control:
+Frappe's template environment exposes database read helpers, so such a user reads past their
+own roles.
+
+**Verdict: accepted.** Not employee-reachable. Keep `Email Template` write — and write on HR
+Settings and Payroll Settings — on the operator role only, and treat edits to those records
+as privileged changes rather than configuration.
+
+### Priority 2 — injection and traversal (2)
+
+**`security.frappe-sql-format-injection` — `hr/doctype/interview/interview.py:429` — ACCEPTED**
+
+The whitelisted `get_events(start, end, filters)` f-string-interpolates `conditions`, which
+comes from `frappe.desk.calendar.get_event_conditions` — Frappe's own helper for exactly this.
+`start` and `end` are bound parameters (`%(start)s`, `%(end)s`). This is the standard Frappe
+calendar pattern, used the same way across Frappe applications, and its safety is inherited
+from that helper. Re-examine if Frappe changes `get_event_conditions`.
+
+**`security.frappe-security-file-traversal` — `overrides/company.py:94` — ACCEPTED (low)**
+
+`read_data_file()` is a bare `open()`. Both call sites build the path with
+`frappe.get_app_path(...)`, and the second interpolates `frappe.scrub(country)`:
+
+    frappe.get_app_path("hrms", "regional", frappe.scrub(country), "data", "salary_components.json")
+
+`scrub` lowercases and turns spaces and hyphens into underscores. It does **not** strip `/`
+or `..`, so a `Country` record named with traversal characters would escape the app
+directory. Three things keep this low: creating a `Country` record requires System Manager;
+the target must parse as JSON; and `read_data_file` returns `"{}"` on `OSError`, so there is
+no read-back channel — content only reaches `Salary Component` inserts.
+
+**VERIFY ON A BENCH:** `scrub`'s behaviour is Frappe's, and Frappe is not vendored here.
+Confirm it against the installed framework before relying on this reasoning.
+
+A one-line upstream hardening — reject a scrubbed segment containing a path separator — is
+worth proposing to `frappe/hrms`.
+
+### Priority 3 — `security.guest-whitelisted-method` (4)
+
+| Endpoint | Verdict |
+| --- | --- |
+| `api/oauth.py:4` `oauth_providers` | ACCEPTED |
+| `api/system_settings.py:4` `get_user_pass_login_disabled` | ACCEPTED |
+| `www/hrms.py:17` `get_context_for_dev` | ACCEPTED **only while `developer_mode` is off** |
+| `utils/__init__.py:11` `get_country` | **NEEDS HARDENING** |
+
+`oauth_providers` returns name, provider name, authorize URL and icon for enabled Social
+Login Keys. `client_secret` is fetched only as a presence test and is never returned. This is
+the same surface Frappe's own login page exposes to anonymous visitors. It does enumerate
+which providers are configured; that is accepted.
+
+`get_user_pass_login_disabled` returns a single boolean the PWA login screen needs in order
+to decide whether to draw the password form.
+
+`get_context_for_dev` returns the full boot payload to an unauthenticated caller and is gated
+by nothing except `frappe.conf.developer_mode`. Inert in a correctly configured production
+site — which makes "correctly configured" a control bERP has to actually hold.
+
+`get_country` is the one worth changing. It is unauthenticated, and for each unseen client IP
+it makes an outbound request to `pro.ip-api.com` carrying `frappe.conf["ip-api-key"]`, then
+stores the result in a module-level `country_info` dict. Three consequences, and the second
+and third matter more to bERP than to upstream because bERP is multi-tenant by design:
+
+- an unauthenticated caller with varied source addresses drives outbound requests and burns a
+  paid API quota;
+- the global dict grows without bound in a long-lived worker, one entry per distinct IP;
+- the cache is per-process and not site-scoped, so entries are shared between sites on one
+  bench.
+
+### Priority 4 — `security.relaxed-permissions` (3)
+
+**`hr/doctype/leave_application/leave_application.json:290` — NOT A FINDING**
+
+The block is `{"permlevel": 1, "read": 1, "role": "All"}`, which reads alarmingly. The only
+permlevel-1 field on Leave Application is `status`. A permlevel grant is a field-level filter
+layered on top of document permissions and confers no document access of its own, so this
+lets an authenticated user see `status` on leave applications they can **already** read —
+which is what lets an Employee see the state of their own request. Working as intended.
+
+**`hr/doctype/expense_claim/expense_claim.json:594` — BY DESIGN**
+
+Expense Approver at permlevel 1. The only permlevel-1 field on Expense Claim is
+`approval_status` — precisely the field an approver exists to set. The same file's
+`role: All` permlevel-1 read resolves the same way as Leave Application's.
+
+**`hr/doctype/leave_ledger_entry/leave_ledger_entry.json:175` — VERIFY ON A BENCH**
+
+The block grants `role: All` with `if_owner: 1` and `create`, `write`, `delete`, `submit`,
+`read`, `report`, `export`, `share`, `email`, `print`. Leave Ledger Entry holds leave
+**balances**. Read literally, that lets a user create and submit ledger entries they own.
+
+The mitigation is `"in_create": 1` on the doctype — Frappe's marker for "only ever created by
+another document". `cancel` and `amend` are absent from the grant, and `write`/`delete` reach
+only drafts, which the normal flow never leaves behind. So the grant is almost certainly
+inert.
+
+"Almost certainly" is not good enough for the records that decide leave balances, and the
+enforcement is Frappe's, not this repository's. **Confirm on a bench that an account holding
+only the Employee role cannot create or submit a Leave Ledger Entry** — through the REST API
+as well as the Desk UI. If `in_create` does not block it, an employee can mint their own
+leave balance, and that is blocking.
+
+### Actions this triage produces
+
+| # | Action | Owner |
+| --- | --- | --- |
+| 1 | Confirm a plain Employee cannot create or submit a Leave Ledger Entry (API and Desk) | bench check, before production data |
+| 2 | Confirm `frappe.scrub` does not strip path separators, then judge the traversal accordingly | bench check |
+| 3 | Assert `developer_mode` is off on every tenant, in the deploy path rather than by convention | bERP deployment |
+| 4 | Leave `ip-api-key` unset, and rate-limit or block `/api/method/hrms.utils.get_country` at the edge | bERP deployment |
+| 5 | Propose upstream: reject path separators in the scrubbed country segment | upstream `frappe/hrms` |
+| 6 | Propose upstream: bound and site-scope the `get_country` cache | upstream `frappe/hrms` |
+
+Actions 1 and 2 are verification, not change, and neither needs an upstream decision.
+
+## What this triage does not claim
+
+The nine SSTI findings and the two injection findings are accepted on **reasoning about the
+code**, not on attempted exploitation. Nothing here was fuzzed, and no proof-of-concept was
+written. An accepted verdict means "the described attack does not reach this code by the path
+the rule implies", not "this code is proven safe".
+
+Two verdicts rest on Frappe framework behaviour that cannot be read from this repository and
+are marked accordingly. Until those two bench checks are done, treat priority 4 as open.
+
+**The gate still stands: complete the two bench checks before bERP HRMS holds production
+employee or payroll data.** The rest of the triage does not block development or internal
+deployment.
 
 Where hardening is needed, prefer fixing upstream and pulling the change back down, so bERP
 does not diverge on security-sensitive paths.
@@ -118,4 +252,6 @@ Re-run this triage when:
 
 - upstream is merged and the diff touches a flagged file;
 - a bERP change modifies a flagged file or adds a guest-accessible endpoint;
-- the module is first exposed to untrusted networks or handles production data.
+- the module is first exposed to untrusted networks or handles production data;
+- Frappe changes `scrub`, `get_event_conditions`, or how `in_create` is enforced — three
+  verdicts above rest on framework behaviour rather than on anything in this repository.
