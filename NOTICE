@@ -29,23 +29,55 @@ authorship.
 WHY THE DEVELOP LANE
 ================================================================================
 
-bERP HRMS tracks upstream's develop lane, and this is deliberate.
+bERP HRMS tracks upstream's develop lane, and this is deliberate. Which bench it
+is deliberate FOR is the part to get right.
 
-bstBizEra/bERP is a fork of ERPNext whose pyproject declares name = "erpnext",
-so it occupies the bench's erpnext application slot, and it requires
-frappe >=17.0.0-dev,<18.0.0. Every bERP bench is therefore a Frappe 17-dev
-bench. This module's frappe >=17.0.0-dev,<18.0.0 and erpnext
->=17.0.0-dev,<18.0.0 match it, as does bstBizEra/bERP-CRM.
+bERP is assembled two different ways, and this module belongs to one of them.
+
+  The development bench -- where this module is installed
+
+      frappe                    develop (17.0.0-dev)
+      erpnext                   bstBizEra/bERP (17.0.0-dev)
+      hrms                      THIS repository (17.0.0-dev)
+      crm                       bstBizEra/bERP-CRM (17.0.0-dev)
+      berp_branding, berp_lao   from bstBizEra/bERP
+
+  Assembled by scripts/install-berp-apps.sh in this repository.
+
+  The tenant bench -- what customers run, and it does NOT hold this module
+
+      frappe                    released version-16
+      erpnext                   UPSTREAM frappe/erpnext, released version-16
+      hrms                      UPSTREAM frappe/hrms, pinned at version-16
+      lending, berp_branding, berp_lao
+
+  Assembled by scripts/deploy/berp_deploy.sh in bstBizEra/bERP, which pins
+  upstream hrms in scripts/apps/pins.json. That repository's own
+  scripts/deploy/README.md states it plainly: "The ERPNext tree in this
+  repository is 17.0.0-dev. The tenants run the released v16 line."
+
+On the development bench, bstBizEra/bERP declares name = "erpnext", so it
+occupies the bench's erpnext application slot and requires
+frappe >=17.0.0-dev,<18.0.0. This module's frappe >=17.0.0-dev,<18.0.0 and
+erpnext >=17.0.0-dev,<18.0.0 match it, as does bstBizEra/bERP-CRM.
 
 Upstream's stable lane (version-16, 16.19.0) requires frappe >=16.0.0,<17.0.0
 and erpnext >=16.0.0,<17.0.0. bench compares these with semantic_version, and a
 `<17.0.0` bound excludes the 17.0.0-dev prerelease, so the stable lane cannot be
-installed onto a bERP bench while the bERP fork holds the erpnext slot.
+installed on that bench while the bERP fork holds the erpnext slot. The develop
+lane is what makes this module installable there at all.
 
-The trade-off is real: this module is pinned to a moving, unreleased upstream
-branch and can break when upstream develop moves. That risk is inherent to the
-platform rather than to this module, and it resolves when the whole bERP stack
-moves to a released Frappe together.
+Two things follow that are worth stating rather than leaving to be inferred.
+
+This repository is not what a tenant receives today. A tenant's HR module is
+upstream frappe/hrms at version-16. Both occupy the `hrms` app slot, so no bench
+holds them at once, and a change made here does not reach a customer until the
+platform's tenant line moves to this module.
+
+The trade-off of the develop lane is real: this module follows a moving,
+unreleased upstream branch and can break when upstream develop moves. That risk
+is inherent to the development bench rather than to this module, and it resolves
+when the whole bERP stack moves to a released Frappe together.
 
 ================================================================================
 LICENCE
