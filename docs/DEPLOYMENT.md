@@ -105,9 +105,17 @@ internet-facing host. That guard is deliberate — do not work around it.
    installer `deploy-dev.sh` uses, so the two benches cannot drift.
 2. Installs nginx and supervisor, and generates their configuration with
    `bench setup nginx` / `bench setup supervisor`.
-3. Removes nginx's default site, which would otherwise shadow ours on :80.
+3. Removes nginx's default site, which would otherwise shadow ours on :80, and
+   blocks `hrms.utils.get_country` — an unauthenticated endpoint that makes a
+   third-party geo-IP call per unseen client IP and caches it forever. Nothing
+   shipped calls the HTTP route; its real use is as a Jinja method, which is
+   unaffected. The change is validated with `nginx -t` and rolled back if it
+   fails to parse.
 4. Sets `developer_mode 0`, sets `host_name` to your HTTPS URL, enables the
-   scheduler, and installs Frappe's backup cron entries.
+   scheduler, and installs Frappe's backup cron entries — then **asserts** the
+   result. It re-reads the config frappe will actually see (site config layered
+   over common) and stops the deploy if `developer_mode` is on or an
+   `ip-api-key` is set. Setting a value is not the same as holding it.
 5. Opens 80, 443 and your SSH port in `ufw`, then enables it.
 6. Obtains a certificate with `certbot --nginx --redirect` and leaves the
    renewal timer in place.
@@ -214,8 +222,15 @@ change — never merge upstream directly on the VM.
 - Enable two-factor authentication in **System Settings** before real HR data
   goes in. Payroll and employee records are exactly the kind of data that
   makes a breach a legal problem as well as an operational one.
-- Keep `developer_mode` at `0`. It exposes internals and permits schema edits
-  through the UI.
+- Keep `developer_mode` at `0`. Besides exposing internals and permitting schema
+  edits through the UI, it is the only thing gating
+  `hrms.www.hrms.get_context_for_dev`, which returns the whole boot payload to
+  an unauthenticated caller. The deploy asserts it, so turning it on later and
+  re-running the script will stop the deploy rather than ship it.
+- Leave `ip-api-key` unset. `hrms.utils.get_country` is unauthenticated and
+  calls a paid geo-IP API once per client IP it has not seen; the key turns an
+  abuse vector into a billable one. The deploy asserts this too, and blocks the
+  route at nginx.
 
 ## Troubleshooting
 

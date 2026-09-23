@@ -133,6 +133,58 @@ ln -sf "${BENCH_DIR}/config/nginx.conf" /etc/nginx/conf.d/frappe-bench.conf
 # The default site would otherwise shadow ours on port 80.
 rm -f /etc/nginx/sites-enabled/default
 
+log "Blocking the unauthenticated geo-IP endpoint"
+# hrms.utils.get_country is @frappe.whitelist(allow_guest=True) and, for every
+# client IP it has not seen, makes an outbound call to a third-party geo-IP
+# service and caches the answer in a module-global dict that is never evicted.
+# Unauthenticated, that is an outbound-request amplifier and unbounded memory
+# growth in a long-lived worker, and the cache is not site-scoped. Finding 4 in
+# docs/SECURITY-BASELINE.md.
+#
+# Blocking the HTTP route costs nothing here: no shipped frontend calls it. Its
+# real use is as a Jinja method (hooks.py `jinja.methods`), which runs inside the
+# template engine and never touches this route. If a tenant ever adds client code
+# that needs it, change this to a rate limit rather than deleting it.
+NGINX_CONF="${BENCH_DIR}/config/nginx.conf"
+NGINX_MARKER="# berp-hrms: block unauthenticated geo-IP endpoint"
+
+if grep -qF "${NGINX_MARKER}" "${NGINX_CONF}"; then
+	log "  already blocked in ${NGINX_CONF}"
+else
+	cp -a "${NGINX_CONF}" "${NGINX_CONF}.berp-bak"
+	python3 - "${NGINX_CONF}" "${NGINX_MARKER}" <<'PYEOF'
+import pathlib, re, sys
+
+path, marker = pathlib.Path(sys.argv[1]), sys.argv[2]
+text = path.read_text()
+
+block = (
+	"\n\t" + marker + "\n"
+	"\tlocation = /api/method/hrms.utils.get_country {\n"
+	"\t\treturn 404;\n"
+	"\t}\n"
+)
+
+# bench emits one `root .../sites;` line per server block for this site, so
+# anchoring there puts the rule in each of them - including the TLS server
+# certbot later clones from the plain one.
+pattern = re.compile(r"^[ \t]*root[ \t]+\S*/sites;[ \t]*$", re.MULTILINE)
+count = len(pattern.findall(text))
+if not count:
+	sys.exit("no `root .../sites;` anchor in the generated nginx config")
+
+path.write_text(pattern.sub(lambda m: m.group(0) + block, text))
+print(f"  inserted into {count} server block(s)")
+PYEOF
+
+	# A broken nginx config takes the site down, so prove it parses and put the
+	# original back if it does not.
+	if ! nginx -t; then
+		mv -f "${NGINX_CONF}.berp-bak" "${NGINX_CONF}"
+		die "the geo-IP block broke the nginx config; the original has been restored"
+	fi
+fi
+
 log "Hardening the site for production"
 su - "${BENCH_USER}" -c "cd '${BENCH_DIR}' && bench --site '${SITE_NAME}' set-config developer_mode 0"
 su - "${BENCH_USER}" -c "cd '${BENCH_DIR}' && bench --site '${SITE_NAME}' set-config host_name 'https://${DOMAIN}'"
@@ -140,6 +192,65 @@ su - "${BENCH_USER}" -c "cd '${BENCH_DIR}' && bench --site '${SITE_NAME}' enable
 su - "${BENCH_USER}" -c "cd '${BENCH_DIR}' && bench --site '${SITE_NAME}' clear-cache"
 # Frappe's own maintenance/backup cron entries.
 su - "${BENCH_USER}" -c "cd '${BENCH_DIR}' && bench setup-backups" || warn "bench setup-backups failed; configure backups manually"
+
+# ---------------------------------------------------------------------------
+# Security assertions
+# ---------------------------------------------------------------------------
+# Setting a value is not the same as holding it. These re-read the config that
+# frappe will actually see and stop the deploy if it is wrong, so a later
+# `bench set-config` or a hand-edited file cannot quietly leave a tenant open.
+log "Asserting the security configuration"
+python3 - "${BENCH_DIR}/sites/common_site_config.json" \
+	"${BENCH_DIR}/sites/${SITE_NAME}/site_config.json" <<'PYEOF'
+import json, pathlib, sys
+
+
+def load(path):
+	p = pathlib.Path(path)
+	if not p.exists():
+		return {}
+	try:
+		return json.loads(p.read_text() or "{}")
+	except json.JSONDecodeError as exc:
+		sys.exit(f"{p} is not valid JSON: {exc}")
+
+
+common, site = load(sys.argv[1]), load(sys.argv[2])
+problems = []
+
+
+def effective(key, default=None):
+	"""frappe layers site_config over common_site_config; the site wins."""
+	return site.get(key, common.get(key, default))
+
+
+# developer_mode gates hrms.www.hrms.get_context_for_dev, which returns the full
+# boot payload to an unauthenticated caller and is guarded by nothing else.
+# Finding 3 in docs/SECURITY-BASELINE.md.
+# A string "0" is truthy to Python and so to frappe, so it is NOT treated as off.
+if effective("developer_mode", 0) not in (0, False, None):
+	problems.append(
+		"developer_mode is on. It exposes hrms.www.hrms.get_context_for_dev, an "
+		"unauthenticated endpoint returning the whole boot payload."
+	)
+
+# An ip-api key turns hrms.utils.get_country's unauthenticated outbound calls
+# into billable ones. The endpoint is blocked at nginx above; leaving the key
+# unset means nothing bills even if that block is ever removed.
+for name, cfg in (("site_config.json", site), ("common_site_config.json", common)):
+	if "ip-api-key" in cfg:
+		problems.append(
+			f"ip-api-key is set in {name}. hrms.utils.get_country is unauthenticated "
+			"and calls a paid API once per unseen client IP."
+		)
+
+if problems:
+	for problem in problems:
+		print(f"  - {problem}")
+	sys.exit("the site is not configured safely for an internet-facing host")
+
+print("  developer_mode off, no ip-api-key: ok")
+PYEOF
 
 nginx -t
 systemctl enable --now nginx supervisor
