@@ -215,12 +215,23 @@ leave balance, and that is blocking.
 | --- | --- | --- |
 | 1 | Confirm a plain Employee cannot create or submit a Leave Ledger Entry (API and Desk) | bench check, before production data |
 | 2 | Confirm `frappe.scrub` does not strip path separators, then judge the traversal accordingly | bench check |
-| 3 | Assert `developer_mode` is off on every tenant, in the deploy path rather than by convention | bERP deployment |
-| 4 | Leave `ip-api-key` unset, and rate-limit or block `/api/method/hrms.utils.get_country` at the edge | bERP deployment |
+| 3 | ~~Assert `developer_mode` is off on every tenant, in the deploy path rather than by convention~~ — **done**, `scripts/deploy-production.sh` | bERP deployment |
+| 4 | ~~Leave `ip-api-key` unset, and rate-limit or block `/api/method/hrms.utils.get_country` at the edge~~ — **done**, blocked at nginx and asserted unset | bERP deployment |
 | 5 | Propose upstream: reject path separators in the scrubbed country segment | upstream `frappe/hrms` |
 | 6 | Propose upstream: bound and site-scope the `get_country` cache | upstream `frappe/hrms` |
 
 Actions 1 and 2 are verification, not change, and neither needs an upstream decision.
+
+Actions 3 and 4 are done. `scripts/deploy-production.sh` now blocks
+`/api/method/hrms.utils.get_country` in the generated nginx config — validated with
+`nginx -t` and rolled back if it will not parse — and, after the hardening step,
+re-reads the config frappe will actually see and stops the deploy if `developer_mode`
+is on or an `ip-api-key` is set.
+
+Blocking that route costs nothing: no shipped frontend calls it. `hooks.py` registers
+`get_country` as a **Jinja method**, and Jinja runs inside the template engine without
+touching `/api/method/`. If a tenant ever adds client code that needs the route, turn
+the block into a rate limit rather than deleting it.
 
 ## What this triage does not claim
 
