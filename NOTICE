@@ -159,6 +159,10 @@ MODIFICATIONS FROM UPSTREAM
       scripts/deploy-production.sh    Ubuntu 24.04 VM behind nginx with TLS
       berp_hrms/rename_migration.py   In-place hrms -> berp_hrms migration for a
                                       site that already has hrms installed
+      berp_hrms/commands.py           Registers `bench rename-from-hrms`, the
+                                      only way to reach that migration: bench
+                                      execute refuses a dotted path in an app
+                                      the site has not installed yet
       docs/LOCAL_SETUP.md
       docs/DEPLOYMENT.md
       docs/DEPLOYMENT_DEV.md

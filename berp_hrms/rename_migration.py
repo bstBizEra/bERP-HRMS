@@ -14,7 +14,12 @@ runbook.
 
 Run it once per site, after the app directory has been moved:
 
-    bench --site <site> execute berp_hrms.rename_migration.execute
+    bench --site <site> rename-from-hrms
+
+That command is registered in berp_hrms/commands.py. `bench execute` cannot
+reach this module: it resolves the dotted path through frappe.get_attr, which
+refuses with AppNotInstalledError until `berp_hrms` is in the site's
+installed-apps list -- which is one of the things this migration writes.
 
 It is idempotent: re-running it on an already-migrated site is a no-op, and it
 prints what it changed rather than working silently.

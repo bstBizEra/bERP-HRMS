@@ -173,10 +173,18 @@ jobs:
           # point, which is what the migration needs in order to read its state.
           git -C "apps/berp_hrms" checkout -q -f "$GITHUB_SHA"
           bench pip install -e ./apps/berp_hrms
-          bench --site test_site execute berp_hrms.rename_migration.execute
+
+          # berp_hrms joins apps.txt before the migration so bench can find the
+          # command it registers; hrms stays until afterwards so the site still
+          # boots as the app it currently has installed.
+          awk 'NF' sites/apps.txt > apps.txt.new
+          grep -qxF berp_hrms apps.txt.new || echo berp_hrms >> apps.txt.new
+          mv apps.txt.new sites/apps.txt
+          cat sites/apps.txt
+
+          bench --site test_site rename-from-hrms
 
           awk 'NF' sites/apps.txt | grep -vxF hrms > apps.txt.new
-          echo berp_hrms >> apps.txt.new
           mv apps.txt.new sites/apps.txt
           cat sites/apps.txt
           rm -rf apps/hrms

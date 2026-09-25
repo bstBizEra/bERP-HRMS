@@ -111,7 +111,7 @@ sed -i 's/^hrms$/berp_hrms/' sites/apps.txt
 bench pip install -e ./apps/berp_hrms
 
 # 5. Rewrite the database to match. Prints what it changed.
-bench --site "$SITE" execute berp_hrms.rename_migration.execute
+bench --site "$SITE" rename-from-hrms
 
 # 6. Normal post-change sequence.
 bench --site "$SITE" migrate
@@ -121,7 +121,18 @@ bench --site "$SITE" clear-cache
 sudo systemctl start berp-dev
 ```
 
-Step 5 is [`berp_hrms/rename_migration.py`](../berp_hrms/rename_migration.py).
+Step 3 has to move the directory rather than leave it: bench derives an app's
+name from its directory basename, and the two must agree.
+
+Step 5 runs [`berp_hrms/rename_migration.py`](../berp_hrms/rename_migration.py)
+through a bench command registered in
+[`berp_hrms/commands.py`](../berp_hrms/commands.py). It is a command rather than
+a `bench execute` because `bench execute` resolves its dotted path through
+`frappe.get_attr`, which refuses with `AppNotInstalledError` until `berp_hrms`
+is in the site's installed-apps list — and that list is one of the things this
+migration writes. bench finds commands through `sites/apps.txt`, which step 3
+has already updated.
+
 It is idempotent, so a re-run after a failure is safe. It deliberately does
 **not** rewrite the site's own customisations — Server Scripts, Client Scripts,
 Notifications, Print Formats, Reports, Custom Fields and Property Setters that
