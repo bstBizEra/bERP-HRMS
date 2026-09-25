@@ -9,7 +9,7 @@ pull requests against `frappe/hrms` — and were removed rather than repaired.
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
-| `ci.yml` | PR, nightly | Full hrms test suite across 3 containers |
+| `ci.yml` | PR, nightly | Full berp_hrms test suite across 3 containers |
 | `ci_faux.yml` | PR touching only docs/assets | Reports the same check names as green, so doc-only PRs are not blocked |
 | `patch.yml` | PR, nightly | Runs migration patches against a v15 dataset |
 | `patch_faux.yml` | PR touching only docs/assets | Companion to the above |

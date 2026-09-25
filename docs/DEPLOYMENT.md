@@ -106,7 +106,7 @@ internet-facing host. That guard is deliberate — do not work around it.
 2. Installs nginx and supervisor, and generates their configuration with
    `bench setup nginx` / `bench setup supervisor`.
 3. Removes nginx's default site, which would otherwise shadow ours on :80, and
-   blocks `hrms.utils.get_country` — an unauthenticated endpoint that makes a
+   blocks `berp_hrms.utils.get_country` — an unauthenticated endpoint that makes a
    third-party geo-IP call per unseen client IP and caches it forever. Nothing
    shipped calls the HTTP route; its real use is as a Jinja method, which is
    unaffected. The change is validated with `nginx -t` and rolled back if it
@@ -189,7 +189,7 @@ sudo -u frappe bench --site hr.example.com restore /path/to/database.sql.gz \
 ### Deploying a change
 
 ```bash
-cd /home/frappe/frappe-bench/apps/hrms
+cd /home/frappe/frappe-bench/apps/berp_hrms
 sudo -u frappe git pull origin main
 
 cd /home/frappe/frappe-bench
@@ -202,12 +202,20 @@ Take a backup before `migrate`. Schema migrations are not reversible.
 
 ### Syncing upstream Frappe HR
 
-This repository keeps full upstream history, so releases merge normally:
+This repository keeps full upstream history, so the merge base is still real:
 
 ```bash
 git fetch upstream develop     # upstream = https://github.com/frappe/hrms.git
 git merge upstream/develop
 ```
+
+Since the app was renamed to `berp_hrms`, expect that merge to conflict across
+the tree rather than apply cleanly — upstream still calls the package `hrms`,
+and every file that names it differs. The practical shape of a sync is now:
+take the merge, resolve by re-applying the rename to the incoming side
+(`git checkout --theirs`, then the same mechanical substitution), and review.
+[RENAME_TO_BERP_HRMS.md](RENAME_TO_BERP_HRMS.md) records the exact substitution
+rule so a sync reproduces it rather than inventing a new one.
 
 Do that on a branch, let it go through review, and deploy it like any other
 change — never merge upstream directly on the VM.
@@ -224,10 +232,10 @@ change — never merge upstream directly on the VM.
   makes a breach a legal problem as well as an operational one.
 - Keep `developer_mode` at `0`. Besides exposing internals and permitting schema
   edits through the UI, it is the only thing gating
-  `hrms.www.hrms.get_context_for_dev`, which returns the whole boot payload to
+  `berp_hrms.www.berp_hrms.get_context_for_dev`, which returns the whole boot payload to
   an unauthenticated caller. The deploy asserts it, so turning it on later and
   re-running the script will stop the deploy rather than ship it.
-- Leave `ip-api-key` unset. `hrms.utils.get_country` is unauthenticated and
+- Leave `ip-api-key` unset. `berp_hrms.utils.get_country` is unauthenticated and
   calls a paid geo-IP API once per client IP it has not seen; the key turns an
   abuse vector into a billable one. The deploy asserts this too, and blocks the
   route at nginx.

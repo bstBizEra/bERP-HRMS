@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
-# Provision a Frappe bench running this repository's `hrms` app.
+# Provision a Frappe bench running this repository's `berp_hrms` app.
 #
 # Target: a clean Debian/Ubuntu host (tested on Ubuntu 24.04) where you have
 # root. It installs the toolchain, builds the bench, creates a site and
-# installs erpnext + hrms onto it.
+# installs erpnext + berp_hrms onto it.
 #
 # The toolchain versions below are not arbitrary - see docs/LOCAL_SETUP.md
 # for what breaks if you use the distro defaults instead.
@@ -16,7 +16,7 @@ set -euo pipefail
 BENCH_USER="${BENCH_USER:-frappe}"
 BENCH_HOME="${BENCH_HOME:-/home/${BENCH_USER}}"
 BENCH_DIR="${BENCH_DIR:-${BENCH_HOME}/frappe-bench}"
-SITE_NAME="${SITE_NAME:-hrms.localhost}"
+SITE_NAME="${SITE_NAME:-berp.localhost}"
 FRAPPE_BRANCH="${FRAPPE_BRANCH:-develop}"
 ERPNEXT_BRANCH="${ERPNEXT_BRANCH:-develop}"
 NODE_MAJOR="${NODE_MAJOR:-24}"
@@ -147,23 +147,23 @@ EOF
 	exit 0
 fi
 
-log "Installing erpnext (hrms declares it in required_apps)"
+log "Installing erpnext (berp_hrms declares it in required_apps)"
 if [[ ! -d "${BENCH_DIR}/apps/erpnext" ]]; then
 	su - "${BENCH_USER}" -c "cd '${BENCH_DIR}' && bench get-app --skip-assets --branch '${ERPNEXT_BRANCH}' erpnext"
 fi
 
-log "Installing hrms from this checkout (${REPO_ROOT})"
-# Staged under the name `hrms` because bench derives the app name from the
+log "Installing berp_hrms from this checkout (${REPO_ROOT})"
+# Staged under the name `berp_hrms` because bench derives the app name from the
 # directory basename - cloning from a directory called bERP-HRMS registers an
 # app of that name and the import fails.
-STAGE="${BENCH_HOME}/src/hrms"
-if [[ ! -d "${BENCH_DIR}/apps/hrms" ]]; then
+STAGE="${BENCH_HOME}/src/berp_hrms"
+if [[ ! -d "${BENCH_DIR}/apps/berp_hrms" ]]; then
 	su - "${BENCH_USER}" -c "mkdir -p '${BENCH_HOME}/src'"
 	su - "${BENCH_USER}" -c "git config --global --add safe.directory '${REPO_ROOT}'"
 	su - "${BENCH_USER}" -c "git config --global --add safe.directory '${REPO_ROOT}/.git'"
 	su - "${BENCH_USER}" -c "rm -rf '${STAGE}' && git clone -q '${REPO_ROOT}' '${STAGE}'"
 	su - "${BENCH_USER}" -c "cd '${BENCH_DIR}' && bench get-app --skip-assets '${STAGE}'"
-	su - "${BENCH_USER}" -c "cd '${BENCH_DIR}/apps/hrms' && git remote set-url upstream https://github.com/bstBizEra/bERP-HRMS.git"
+	su - "${BENCH_USER}" -c "cd '${BENCH_DIR}/apps/berp_hrms' && git remote set-url upstream https://github.com/bstBizEra/bERP-HRMS.git"
 	su - "${BENCH_USER}" -c "rm -rf '${STAGE}'"
 fi
 
@@ -174,7 +174,7 @@ if [[ ! -d "${BENCH_DIR}/sites/${SITE_NAME}" ]]; then
 		--db-root-password '${DB_ROOT_PASSWORD}' \
 		--admin-password '${ADMIN_PASSWORD}' \
 		--set-default"
-	su - "${BENCH_USER}" -c "cd '${BENCH_DIR}' && bench --site '${SITE_NAME}' install-app erpnext hrms"
+	su - "${BENCH_USER}" -c "cd '${BENCH_DIR}' && bench --site '${SITE_NAME}' install-app erpnext berp_hrms"
 fi
 
 log "Building assets"

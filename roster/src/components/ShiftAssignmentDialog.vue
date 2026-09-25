@@ -403,7 +403,7 @@ const employee = createResource({
 });
 
 const shiftSchedule = createResource({
-	url: "hrms.api.roster.get_schedule_from_assignment",
+	url: "berp_hrms.api.roster.get_schedule_from_assignment",
 	makeParams() {
 		return { shift_schedule_assignment: form.shift_schedule_assignment };
 	},
@@ -441,7 +441,7 @@ const shiftAssignments = createListResource({
 });
 
 const insertShift = createResource({
-	url: "hrms.api.roster.insert_shift",
+	url: "berp_hrms.api.roster.insert_shift",
 	makeParams() {
 		return {
 			employee: form.employee,
@@ -463,7 +463,7 @@ const insertShift = createResource({
 });
 
 const deleteCurrentShift = createResource({
-	url: "hrms.api.roster.break_shift",
+	url: "berp_hrms.api.roster.break_shift",
 	makeParams() {
 		return {
 			assignment: props.shiftAssignmentName,
@@ -480,7 +480,7 @@ const deleteCurrentShift = createResource({
 });
 
 const createShiftAssignmentSchedule = createResource({
-	url: "hrms.api.roster.create_shift_schedule_assignment",
+	url: "berp_hrms.api.roster.create_shift_schedule_assignment",
 	makeParams() {
 		return {
 			employee: form.employee,
@@ -506,7 +506,7 @@ const createShiftAssignmentSchedule = createResource({
 });
 
 const deleteShiftScheduleAssignment = createResource({
-	url: "hrms.api.roster.delete_shift_schedule_assignment",
+	url: "berp_hrms.api.roster.delete_shift_schedule_assignment",
 	makeParams() {
 		return { shift_schedule_assignment: form.shift_schedule_assignment };
 	},

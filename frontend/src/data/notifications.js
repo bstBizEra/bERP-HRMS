@@ -2,8 +2,8 @@ import { createResource, createListResource } from "frappe-ui"
 import { userResource } from "./user"
 
 export const unreadNotificationsCount = createResource({
-	url: "hrms.api.get_unread_notifications_count",
-	cache: "hrms:unread_notifications_count",
+	url: "berp_hrms.api.get_unread_notifications_count",
+	cache: "berp_hrms:unread_notifications_count",
 	initialData: 0,
 	auto: true,
 })
@@ -22,7 +22,7 @@ export const notifications = createListResource({
 	],
 	auto: false,
 	pageLength: 10,
-	cache: "hrms:notifications",
+	cache: "berp_hrms:notifications",
 	orderBy: "creation desc",
 	onSuccess() {
 		unreadNotificationsCount.reload()
@@ -30,7 +30,7 @@ export const notifications = createListResource({
 })
 
 export const arePushNotificationsEnabled = createResource({
-	url: "hrms.api.are_push_notifications_enabled",
-	cache: "hrms:push_notifications_enabled",
+	url: "berp_hrms.api.are_push_notifications_enabled",
+	cache: "berp_hrms:push_notifications_enabled",
 	auto: true,
 })

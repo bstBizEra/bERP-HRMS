@@ -117,9 +117,26 @@ jobs:
           wget https://frappe.io/files/frappe-hr-v14-p.sql.gz
           bench --site test_site --force restore ~/frappe-bench/frappe-hr-v14-p.sql.gz
 
+          # The dump is a v14 site with UPSTREAM `hrms` installed, and this
+          # repository's app is `berp_hrms`. So the historical legs run against
+          # upstream hrms, and the swap to this repository happens through
+          # berp_hrms.rename_migration - which is the upgrade path a real site
+          # takes, and the only way this test still means anything after the
+          # rename.
+          git init -q apps/hrms
+          git -C "apps/hrms" remote add upstream https://github.com/frappe/hrms.git
+          git -C "apps/hrms" fetch -q --depth 1 upstream version-15-hotfix
+          git -C "apps/hrms" checkout -q -f FETCH_HEAD
+          # bench writes sites/apps.txt with no trailing newline, so appending
+          # with `echo >>` joins onto the previous app's name and the bench then
+          # tries to import a module called `erpnexthrms`. Rewrite the file.
+          awk 'NF' sites/apps.txt | grep -vxF berp_hrms > apps.txt.new
+          echo hrms >> apps.txt.new
+          mv apps.txt.new sites/apps.txt
+          cat sites/apps.txt
+
           git -C "apps/frappe" remote set-url upstream https://github.com/frappe/frappe.git
           git -C "apps/erpnext" remote set-url upstream https://github.com/frappe/erpnext.git
-          git -C "apps/hrms" remote set-url upstream https://github.com/frappe/hrms.git
 
 
           function update_to_version() {
@@ -150,6 +167,28 @@ jobs:
           update_to_version 15 3.13
           update_to_version 16 3.14
 
+          echo "Swapping upstream hrms for this repository's berp_hrms"
+          # Done here, on a consistent v16 stack, rather than after frappe and
+          # erpnext move to develop: the site still boots as `hrms` at this
+          # point, which is what the migration needs in order to read its state.
+          git -C "apps/berp_hrms" checkout -q -f "$GITHUB_SHA"
+          bench pip install -e ./apps/berp_hrms
+
+          # berp_hrms joins apps.txt before the migration so bench can find the
+          # command it registers; hrms stays until afterwards so the site still
+          # boots as the app it currently has installed.
+          awk 'NF' sites/apps.txt > apps.txt.new
+          grep -qxF berp_hrms apps.txt.new || echo berp_hrms >> apps.txt.new
+          mv apps.txt.new sites/apps.txt
+          cat sites/apps.txt
+
+          bench --site test_site rename-from-hrms
+
+          awk 'NF' sites/apps.txt | grep -vxF hrms > apps.txt.new
+          mv apps.txt.new sites/apps.txt
+          cat sites/apps.txt
+          rm -rf apps/hrms
+
           echo "Updating to latest version"
           # This fork's default branch is `main` and tracks upstream `develop`.
           # `upstream` here is frappe/frappe, which has no `main` branch, so
@@ -161,13 +200,13 @@ jobs:
           git -C "apps/frappe" fetch --depth 1 upstream "$upstream_branch"
           git -C "apps/frappe" checkout -q -f FETCH_HEAD
           git -C "apps/erpnext" checkout -q -f FETCH_HEAD
-          git -C "apps/hrms" checkout -q -f "$GITHUB_SHA"
+          git -C "apps/berp_hrms" checkout -q -f "$GITHUB_SHA"
 
           pgrep honcho | xargs kill
           rm -rf ~/frappe-bench/env
           bench -v setup env
           bench pip install -e ./apps/erpnext
-          bench pip install -e ./apps/hrms
+          bench pip install -e ./apps/berp_hrms
           bench start &>> ~/frappe-bench/bench_start.log &
 
           bench --site test_site migrate

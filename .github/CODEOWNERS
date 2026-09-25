@@ -4,8 +4,8 @@
 # These owners will be the default owners for everything in
 # the repo. Unless a later match takes precedence.
 
-hrms/hr/ @ruchamahabal @asmitahase
-hrms/payroll/ @ruchamahabal @AyshaHakeem @iamkhanraheel
+berp_hrms/hr/ @ruchamahabal @asmitahase
+berp_hrms/payroll/ @ruchamahabal @AyshaHakeem @iamkhanraheel
 
 frontend/ @ruchamahabal @asmitahase
 roster/ @ruchamahabal @asmitahase

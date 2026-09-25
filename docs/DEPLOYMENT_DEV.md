@@ -38,7 +38,7 @@ Every value is overridable by environment variable — `BERP_USER`,
 |---|---|---|---|
 | `frappe` | `frappe/frappe` | `develop` | `FRAPPE_BRANCH` |
 | `erpnext` | **`bstBizEra/bERP`** | `dev_branding_lao_hrms_crm` | `BERP_REPO` / `BERP_BRANCH` |
-| `hrms` | `bstBizEra/bERP-HRMS` | `main` | `HRMS_REPO` / `HRMS_BRANCH` |
+| `berp_hrms` | `bstBizEra/bERP-HRMS` | `main` | `HRMS_REPO` / `HRMS_BRANCH` |
 | `crm` | `bstBizEra/bERP-CRM` | `main` | `CRM_REPO` / `CRM_BRANCH` |
 | `berp_branding` | subdirectory of `bERP` | same as `erpnext` | `BERP_SUBAPPS` |
 | `berp_lao` | subdirectory of `bERP` | same as `erpnext` | `BERP_SUBAPPS` |
@@ -164,7 +164,7 @@ sudo -u berp -H bash -lc "cd /srv/berp/deployments/dev && bench build"
 Deploying a change:
 
 ```bash
-sudo -u berp -H bash -lc "cd /srv/berp/deployments/dev/apps/hrms && git pull origin main"
+sudo -u berp -H bash -lc "cd /srv/berp/deployments/dev/apps/berp_hrms && git pull origin main"
 sudo -u berp -H bash -lc "cd /srv/berp/deployments/dev && bench --site dev.berp.bizera.la migrate && bench build"
 sudo systemctl restart berp-dev
 ```

@@ -134,7 +134,7 @@ ln -sf "${BENCH_DIR}/config/nginx.conf" /etc/nginx/conf.d/frappe-bench.conf
 rm -f /etc/nginx/sites-enabled/default
 
 log "Blocking the unauthenticated geo-IP endpoint"
-# hrms.utils.get_country is @frappe.whitelist(allow_guest=True) and, for every
+# berp_hrms.utils.get_country is @frappe.whitelist(allow_guest=True) and, for every
 # client IP it has not seen, makes an outbound call to a third-party geo-IP
 # service and caches the answer in a module-global dict that is never evicted.
 # Unauthenticated, that is an outbound-request amplifier and unbounded memory
@@ -160,7 +160,7 @@ text = path.read_text()
 
 block = (
 	"\n\t" + marker + "\n"
-	"\tlocation = /api/method/hrms.utils.get_country {\n"
+	"\tlocation = /api/method/berp_hrms.utils.get_country {\n"
 	"\t\treturn 404;\n"
 	"\t}\n"
 )
@@ -224,23 +224,23 @@ def effective(key, default=None):
 	return site.get(key, common.get(key, default))
 
 
-# developer_mode gates hrms.www.hrms.get_context_for_dev, which returns the full
+# developer_mode gates berp_hrms.www.berp_hrms.get_context_for_dev, which returns the full
 # boot payload to an unauthenticated caller and is guarded by nothing else.
 # Finding 3 in docs/SECURITY-BASELINE.md.
 # A string "0" is truthy to Python and so to frappe, so it is NOT treated as off.
 if effective("developer_mode", 0) not in (0, False, None):
 	problems.append(
-		"developer_mode is on. It exposes hrms.www.hrms.get_context_for_dev, an "
+		"developer_mode is on. It exposes berp_hrms.www.berp_hrms.get_context_for_dev, an "
 		"unauthenticated endpoint returning the whole boot payload."
 	)
 
-# An ip-api key turns hrms.utils.get_country's unauthenticated outbound calls
+# An ip-api key turns berp_hrms.utils.get_country's unauthenticated outbound calls
 # into billable ones. The endpoint is blocked at nginx above; leaving the key
 # unset means nothing bills even if that block is ever removed.
 for name, cfg in (("site_config.json", site), ("common_site_config.json", common)):
 	if "ip-api-key" in cfg:
 		problems.append(
-			f"ip-api-key is set in {name}. hrms.utils.get_country is unauthenticated "
+			f"ip-api-key is set in {name}. berp_hrms.utils.get_country is unauthenticated "
 			"and calls a paid API once per unseen client IP."
 		)
 

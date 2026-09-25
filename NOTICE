@@ -38,7 +38,7 @@ bERP is assembled two different ways, and this module belongs to one of them.
 
       frappe                    develop (17.0.0-dev)
       erpnext                   bstBizEra/bERP (17.0.0-dev)
-      hrms                      THIS repository (17.0.0-dev)
+      berp_hrms                 THIS repository (17.0.0-dev)
       crm                       bstBizEra/bERP-CRM (17.0.0-dev)
       berp_branding, berp_lao   from bstBizEra/bERP
 
@@ -70,9 +70,15 @@ lane is what makes this module installable there at all.
 Two things follow that are worth stating rather than leaving to be inferred.
 
 This repository is not what a tenant receives today. A tenant's HR module is
-upstream frappe/hrms at version-16. Both occupy the `hrms` app slot, so no bench
-holds them at once, and a change made here does not reach a customer until the
-platform's tenant line moves to this module.
+upstream frappe/hrms at version-16, and a change made here does not reach a
+customer until the platform's tenant line moves to this module.
+
+Until this module was renamed, the two could not even be told apart: both
+installed as `hrms`, so no bench could hold them at once. Since the rename they
+occupy different application slots -- `berp_hrms` and `hrms` -- and a single
+bench can carry both. That is a side effect of the rename rather than its
+purpose, and it is not a supported configuration: the two ship the same
+doctypes, and installing both on one site would collide on every one of them.
 
 The trade-off of the develop lane is real: this module follows a moving,
 unreleased upstream branch and can break when upstream develop moves. That risk
@@ -120,17 +126,47 @@ this repository.
 MODIFICATIONS FROM UPSTREAM
 ================================================================================
 
-No file under hrms/ is modified. The application source is upstream's.
+  Renamed -- the application installs as `berp_hrms`, not as `hrms`:
+
+      The Python package moved from hrms/ to berp_hrms/, and every lowercase
+      `hrms` token in the application tree became `berp_hrms`: imports and
+      dotted paths, patch paths, /assets/ URLs, desk bundle names, realtime and
+      cache keys, the PWA route, and the "app" field on Dock, Desktop Icon,
+      Workspace and Sidebar fixtures. Four spellings were deliberately kept --
+      github.com/frappe/hrms, the [org_name]/hrms example in config/docs.py, the
+      sk_hrms site-config key, and upstream's [frappe.hrms] Crowdin project id.
+
+      app_title became "bERP HR" and app_publisher became bstBizEra. Product
+      copy inside the application still reads "Frappe HR" and is unchanged.
+
+      No application logic was modified. Every change is a substitution of the
+      package name, and `git log` on any file still shows its upstream
+      authorship. The consequence is that `git merge upstream/develop` now
+      conflicts across the tree; docs/RENAME_TO_BERP_HRMS.md records the exact
+      substitution rule so a sync reproduces it rather than inventing one.
+
+      Two comment-only exceptions: hooks.py and api/oauth.py each carry a
+      `# nosemgrep` annotation, because rewriting the package name inside the
+      flagged code made two already-triaged inherited findings read as new ones
+      to semgrep. docs/SECURITY-BASELINE.md records the exception and why it
+      was granted. No executable line changed.
 
   Added -- deployment and setup tooling, none of which exists upstream:
       scripts/setup-bench.sh          Local bench provisioning
-      scripts/install-berp-apps.sh    Shared app assembly: erpnext (bERP), hrms,
-                                      crm, berp_branding, berp_lao
+      scripts/install-berp-apps.sh    Shared app assembly: erpnext (bERP),
+                                      berp_hrms, crm, berp_branding, berp_lao
       scripts/deploy-dev.sh           Private development VM, reached over SSH
       scripts/deploy-production.sh    Ubuntu 24.04 VM behind nginx with TLS
+      berp_hrms/rename_migration.py   In-place hrms -> berp_hrms migration for a
+                                      site that already has hrms installed
+      berp_hrms/commands.py           Registers `bench rename-from-hrms`, the
+                                      only way to reach that migration: bench
+                                      execute refuses a dotted path in an app
+                                      the site has not installed yet
       docs/LOCAL_SETUP.md
       docs/DEPLOYMENT.md
       docs/DEPLOYMENT_DEV.md
+      docs/RENAME_TO_BERP_HRMS.md
       docker/Dockerfile
       .github/workflows/README.md
       NOTICE, docs/SECURITY-BASELINE.md
@@ -146,7 +182,11 @@ No file under hrms/ is modified. The application source is upstream's.
       .github/helper/install.sh       Resolve upstream dependency branches from
       .github/workflows/patch.yml     this repository's branch names. No upstream
                                       Frappe repository has a `main` branch, so
-                                      both map main -> develop.
+                                      both map main -> develop. patch.yml
+                                      additionally steps its v14 dump up through
+                                      UPSTREAM hrms and runs the rename
+                                      migration, because the dump is a site with
+                                      `hrms` installed.
       README.md                       bERP module documentation
-      docker/docker-compose.yml       Install hrms from this repository rather
-      docker/init.sh                  than cloning upstream
+      docker/docker-compose.yml       Install berp_hrms from this repository
+      docker/init.sh                  rather than cloning upstream

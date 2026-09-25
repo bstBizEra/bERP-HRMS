@@ -42,7 +42,7 @@ const employeeAdvance = ref({
 
 // get form fields
 const formFields = createResource({
-	url: "hrms.api.get_doctype_fields",
+	url: "berp_hrms.api.get_doctype_fields",
 	params: { doctype: "Employee Advance" },
 	transform(data) {
 		const fields = getFilteredFields(data)

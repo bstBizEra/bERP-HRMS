@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "vite",
     "serve": "vite preview",
-    "build": "vite build --base=/assets/hrms/roster/ && yarn copy-html-entry",
-    "copy-html-entry": "cp ../hrms/public/roster/index.html ../hrms/www/roster.html"
+    "build": "vite build --base=/assets/berp_hrms/roster/ && yarn copy-html-entry",
+    "copy-html-entry": "cp ../berp_hrms/public/roster/index.html ../berp_hrms/www/roster.html"
   },
   "dependencies": {
     "@vitejs/plugin-vue": "^4.4.0",

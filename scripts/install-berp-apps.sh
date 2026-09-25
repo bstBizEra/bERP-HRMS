@@ -65,8 +65,8 @@ get_git_app() {
 log "Installing erpnext from bERP (${BERP_BRANCH})"
 get_git_app erpnext "${BERP_REPO}" "${BERP_BRANCH}"
 
-log "Installing hrms (${HRMS_BRANCH})"
-get_git_app hrms "${HRMS_REPO}" "${HRMS_BRANCH}"
+log "Installing berp_hrms (${HRMS_BRANCH})"
+get_git_app berp_hrms "${HRMS_REPO}" "${HRMS_BRANCH}"
 
 log "Installing crm (${CRM_BRANCH})"
 get_git_app crm "${CRM_REPO}" "${CRM_BRANCH}"
@@ -103,7 +103,7 @@ fi
 
 # erpnext first: berp_branding and berp_lao both declare it in required_apps.
 log "Installing apps onto ${SITE_NAME}"
-for app in erpnext hrms crm ${BERP_SUBAPPS}; do
+for app in erpnext berp_hrms crm ${BERP_SUBAPPS}; do
 	as_bench "cd '${BENCH_DIR}' && bench --site '${SITE_NAME}' list-apps | grep -qw '${app}'" \
 		&& { echo "${app} already installed on the site"; continue; }
 	as_bench "cd '${BENCH_DIR}' && bench --site '${SITE_NAME}' install-app '${app}'"

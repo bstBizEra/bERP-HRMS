@@ -19,8 +19,8 @@ sudo ./scripts/setup-bench.sh
 su - frappe -c "cd /home/frappe/frappe-bench && bench start"
 ```
 
-Then add `127.0.0.1 hrms.localhost` to `/etc/hosts` and open
-<http://hrms.localhost:8000>. Default login is `Administrator` / `admin`.
+Then add `127.0.0.1 berp.localhost` to `/etc/hosts` and open
+<http://berp.localhost:8000>. Default login is `Administrator` / `admin`.
 
 The script is idempotent — re-running it skips any stage that is already
 done, so it is safe to re-run after a failure.
@@ -29,7 +29,7 @@ Tunables (all environment variables):
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `SITE_NAME` | `hrms.localhost` | Site to create |
+| `SITE_NAME` | `berp.localhost` | Site to create |
 | `FRAPPE_BRANCH` | `develop` | Frappe framework branch |
 | `ERPNEXT_BRANCH` | `develop` | ERPNext branch |
 | `PYTHON_VERSION` | `3.14` | Interpreter for the bench venv |
@@ -52,7 +52,7 @@ container; expect it to take a while. Afterwards the app is on
 <http://localhost:8000>.
 
 Unlike the upstream compose file, this one mounts **this repository** as the
-`hrms` app, so you are running your own code rather than a fresh clone of
+`berp_hrms` app, so you are running your own code rather than a fresh clone of
 `frappe/hrms`.
 
 ## Toolchain requirements
@@ -65,13 +65,14 @@ Ubuntu 24.04 ships by default:
 | **Python 3.14** | `frappe` v17 sets `requires-python = ">=3.14,<3.15"` and uses PEP 695 `type` statements | `SyntaxError: invalid syntax` at `type ConfType = ...` during the editable install |
 | **Node ≥ 24** | `frappe`'s `package.json` sets `"engines": { "node": ">=24" }` | `error frappe-framework@: The engine "node" is incompatible with this module` |
 | **MariaDB with `utf8mb4`** | Frappe validates server charset before creating a site | Site creation aborts on charset validation |
-| **ERPNext installed** | `hrms/hooks.py` declares `required_apps = ["frappe/erpnext"]`, and ~108 modules import `erpnext` | Import errors across Payroll, Expense Claims and Salary Slips |
+| **ERPNext installed** | `berp_hrms/hooks.py` declares `required_apps = ["frappe/erpnext"]`, and ~108 modules import `erpnext` | Import errors across Payroll, Expense Claims and Salary Slips |
 | **Non-root user** | `bench` refuses to initialise as root | `bench init` aborts immediately |
 
 Note that `pyproject.toml` in this repo advertises `requires-python = ">=3.10"`.
 That value is inherited from upstream and is **misleading** — it describes this
 app in isolation, but the framework it depends on will not build below 3.14.
-It is left untouched so that merges from `frappe/hrms` stay clean.
+It is left untouched because nothing reads it — bench resolves the interpreter
+from the bench's own env, not from this value.
 
 ## Gotchas worth knowing
 
@@ -85,7 +86,7 @@ shows jinja2 installed. Install with `/usr/bin/python3 -m pip`.
 **App directory naming.** `bench get-app <path>` derives the app name from the
 directory basename. Pointing it at a checkout called `bERP-HRMS` registers an
 app named `bERP-HRMS`, which then fails to import (the Python package is
-`hrms`). Stage the clone in a directory literally named `hrms`.
+`berp_hrms`). Stage the clone in a directory literally named `berp_hrms`.
 
 **TLS behind a proxy.** If your machine routes HTTPS through an intercepting
 proxy, `uv` will fail with `invalid peer certificate: UnknownIssuer` because it
@@ -103,7 +104,7 @@ A fresh site prompts for the setup wizard on first login. To skip the UI:
 
 ```bash
 cd /home/frappe/frappe-bench
-bench --site hrms.localhost console <<'PY'
+bench --site berp.localhost console <<'PY'
 import frappe
 from frappe.desk.page.setup_wizard.setup_wizard import setup_complete
 
@@ -140,10 +141,10 @@ cd /home/frappe/frappe-bench
 
 bench start                                   # all processes (web, worker, scheduler)
 bench serve --port 8000                       # web only, no asset watcher
-bench --site hrms.localhost migrate           # apply schema changes
-bench --site hrms.localhost console           # Python REPL with frappe loaded
-bench --site hrms.localhost mariadb           # SQL shell
-bench --site hrms.localhost set-admin-password <pw>
+bench --site berp.localhost migrate           # apply schema changes
+bench --site berp.localhost console           # Python REPL with frappe loaded
+bench --site berp.localhost mariadb           # SQL shell
+bench --site berp.localhost set-admin-password <pw>
 bench build                                   # rebuild JS/CSS bundles
 ```
 

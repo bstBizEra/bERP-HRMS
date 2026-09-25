@@ -95,7 +95,7 @@ const companyCurrency = computed(() => getCompanyCurrency(expenseClaim.value.com
 
 // get form fields
 const formFields = createResource({
-	url: "hrms.api.get_doctype_fields",
+	url: "berp_hrms.api.get_doctype_fields",
 	params: { doctype: "Expense Claim" },
 	transform(data) {
 		let fields = getFilteredFields(data)
@@ -130,7 +130,7 @@ useCurrencyConversion(
 
 // resources & helper functions
 const advances = createResource({
-	url: "hrms.hr.doctype.expense_claim.expense_claim.get_advances",
+	url: "berp_hrms.hr.doctype.expense_claim.expense_claim.get_advances",
 	makeParams() {
 		return { expense_claim: expenseClaim.value }
 	},
@@ -173,7 +173,7 @@ function onFormReloaded() {
 }
 
 const expenseApproverDetails = createResource({
-	url: "hrms.api.get_expense_approval_details",
+	url: "berp_hrms.api.get_expense_approval_details",
 	params: { employee: currEmployee.value },
 	onSuccess(data) {
 		setExpenseApprover(data)
@@ -201,7 +201,7 @@ const employeeCurrency = createResource({
 });
 
 const companyDetails = createResource({
-	url: "hrms.api.get_company_cost_center_and_expense_account",
+	url: "berp_hrms.api.get_company_cost_center_and_expense_account",
 	params: { company: expenseClaim.value.company },
 	onSuccess(data) {
 		expenseClaim.value.cost_center = data?.cost_center

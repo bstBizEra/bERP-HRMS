@@ -2,7 +2,7 @@
 #
 #   cd docker && docker compose up
 #
-# The repository is mounted at /workspace, and init.sh installs the `hrms`
+# The repository is mounted at /workspace, and init.sh installs the `berp_hrms`
 # app from that mount - so this runs your code, not a fresh clone of
 # frappe/hrms.
 services:
@@ -43,7 +43,7 @@ services:
       SHELL: /bin/bash
       DB_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-123}"
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:-admin}"
-      SITE_NAME: "${SITE_NAME:-hrms.localhost}"
+      SITE_NAME: "${SITE_NAME:-berp.localhost}"
       FRAPPE_BRANCH: "${FRAPPE_BRANCH:-develop}"
       ERPNEXT_BRANCH: "${ERPNEXT_BRANCH:-develop}"
       PYTHON_VERSION: "${PYTHON_VERSION:-3.14}"
