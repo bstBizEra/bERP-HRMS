@@ -1,11 +1,12 @@
 """In-place migration of an existing site from the `hrms` app to `berp_hrms`.
 
-Frappe keys a great deal of stored state on the app name: which apps a site has
-installed, which app owns each Module Def, which patches have already run, the
-dotted paths of scheduled jobs, and the `app` column on Dock / Workspace /
-Sidebar / Desktop Icon records. Renaming the package on disk changes none of
-that, so a site that had `hrms` installed will fail to boot -- or silently
-re-run every patch -- until the database is updated to match.
+Frappe keys a great deal of stored state on the app name: the `installed_apps`
+global, the Installed Applications record beside it, which app owns each Module
+Def, which patches have already run, the dotted paths of scheduled jobs, and the
+`app` column on Dock / Workspace / Sidebar / Desktop Icon records. Renaming the
+package on disk changes none of that, so a site that had `hrms` installed will
+fail to boot -- or silently re-run every patch -- until the database is updated
+to match.
 
 This is the database half of the rename. The filesystem half (moving
 `apps/hrms` to `apps/berp_hrms`, rewriting `sites/apps.txt` and reinstalling the
@@ -28,6 +29,8 @@ Everything here goes through the query builder rather than raw SQL. The table
 and column names are internal constants, but a migration that rewrites
 installed-app state is the last place to hand-assemble a query string.
 """
+
+import json
 
 import frappe
 
@@ -59,6 +62,7 @@ def execute():
 
 	print(f"Migrating {site}: {OLD_APP} -> {NEW_APP}")
 
+	_rewrite_app_globals()
 	_rename_installed_app()
 	_rename_module_defs()
 	_rewrite_dotted_paths("Patch Log", "patch")
@@ -85,6 +89,9 @@ def _table(doctype: str):
 
 
 def _has_old_state() -> bool:
+	if OLD_APP in _app_list_global("installed_apps"):
+		return True
+
 	installed = _table("Installed Application")
 	module_def = _table("Module Def")
 
@@ -101,17 +108,74 @@ def _has_old_state() -> bool:
 	return bool(has_installed or has_modules)
 
 
+def _app_list_global(key: str) -> list[str]:
+	try:
+		value = json.loads(frappe.db.get_global(key) or "[]")
+	except (TypeError, ValueError):
+		return []
+	return value if isinstance(value, list) else []
+
+
+def _rewrite_app_globals():
+	"""Rewrite the global JSON lists that name apps.
+
+	This is the one that matters most. `frappe.get_installed_apps()` does not read
+	the `Installed Application` table -- that carries version and branch metadata
+	beside the real list -- it reads a JSON list stored as a global:
+
+	    installed = orjson.loads(frappe.db.get_global("installed_apps") or "[]")
+
+	Leave that naming `hrms` and the next `bench migrate` dies in
+	`sync_module_defs` with `ModuleNotFoundError: No module named 'hrms'`, long
+	after everything else looks migrated.
+
+	Every global holding a list with `hrms` in it is rewritten rather than a
+	hard-coded few, so `disabled_apps`, `setup_wizard_completed_apps` and
+	whatever Frappe adds next are covered. The match is on a whole element, not a
+	substring, so a global that merely mentions the word is left alone.
+	"""
+	table = _table("DefaultValue")
+	rows = (
+		frappe.qb.from_(table)
+		.select(table.defkey, table.defvalue)
+		.where(table.parent == "__global")
+		.run(as_dict=True)
+	)
+
+	changed = 0
+	for row in rows:
+		try:
+			value = json.loads(row.defvalue or "")
+		except (TypeError, ValueError):
+			continue
+		if not isinstance(value, list) or OLD_APP not in value:
+			continue
+
+		renamed = []
+		for app in value:
+			app = NEW_APP if app == OLD_APP else app
+			if app not in renamed:
+				renamed.append(app)
+
+		frappe.db.set_global(row.defkey, json.dumps(renamed))
+		print(f"    {row.defkey}: {value} -> {renamed}")
+		changed += 1
+
+	print(f"  app-name globals rewritten: {changed}")
+
+
 def _names_where_app_is(doctype: str, column: str, value: str) -> list[str]:
 	table = _table(doctype)
 	return frappe.qb.from_(table).select(table.name).where(table[column] == value).run(pluck=True)
 
 
 def _rename_installed_app():
-	"""Point the site's installed-apps list at the new name.
+	"""Point the Installed Applications record at the new name.
 
-	`Installed Applications` is a Single whose child rows are keyed on app_name;
-	frappe.get_installed_apps() reads them, and an entry naming a package that no
-	longer imports makes the site unbootable.
+	This is the metadata beside the `installed_apps` global -- app version and
+	git branch, shown in the Installed Applications single. It is not what
+	frappe.get_installed_apps() reads, but leaving it stale means the site
+	reports a version for an app it no longer has.
 	"""
 	table = _table("Installed Application")
 	stale = _names_where_app_is("Installed Application", "app_name", OLD_APP)
