@@ -127,8 +127,13 @@ jobs:
           git -C "apps/hrms" remote add upstream https://github.com/frappe/hrms.git
           git -C "apps/hrms" fetch -q --depth 1 upstream version-15-hotfix
           git -C "apps/hrms" checkout -q -f FETCH_HEAD
-          sed -i '/^berp_hrms$/d' sites/apps.txt
-          grep -qxF hrms sites/apps.txt || echo hrms >> sites/apps.txt
+          # bench writes sites/apps.txt with no trailing newline, so appending
+          # with `echo >>` joins onto the previous app's name and the bench then
+          # tries to import a module called `erpnexthrms`. Rewrite the file.
+          awk 'NF' sites/apps.txt | grep -vxF berp_hrms > apps.txt.new
+          echo hrms >> apps.txt.new
+          mv apps.txt.new sites/apps.txt
+          cat sites/apps.txt
 
           git -C "apps/frappe" remote set-url upstream https://github.com/frappe/frappe.git
           git -C "apps/erpnext" remote set-url upstream https://github.com/frappe/erpnext.git
@@ -170,8 +175,10 @@ jobs:
           bench pip install -e ./apps/berp_hrms
           bench --site test_site execute berp_hrms.rename_migration.execute
 
-          sed -i '/^hrms$/d' sites/apps.txt
-          grep -qxF berp_hrms sites/apps.txt || echo berp_hrms >> sites/apps.txt
+          awk 'NF' sites/apps.txt | grep -vxF hrms > apps.txt.new
+          echo berp_hrms >> apps.txt.new
+          mv apps.txt.new sites/apps.txt
+          cat sites/apps.txt
           rm -rf apps/hrms
 
           echo "Updating to latest version"

@@ -18,6 +18,10 @@ Run it once per site, after the app directory has been moved:
 
 It is idempotent: re-running it on an already-migrated site is a no-op, and it
 prints what it changed rather than working silently.
+
+Everything here goes through the query builder rather than raw SQL. The table
+and column names are internal constants, but a migration that rewrites
+installed-app state is the last place to hand-assemble a query string.
 """
 
 import frappe
@@ -57,7 +61,10 @@ def execute():
 	_rename_app_columns()
 	_rename_dock()
 
-	frappe.db.commit()
+	# This runs as a one-shot `bench execute`, not inside a request, so nothing
+	# else will commit for us and a half-applied rename leaves the site
+	# unbootable.
+	frappe.db.commit()  # nosemgrep
 	frappe.clear_cache()
 
 	print("\nDatabase migration complete. Still to run, in this order:")
@@ -68,25 +75,30 @@ def execute():
 	_report_code_bearing()
 
 
+def _table(doctype: str):
+	return frappe.qb.DocType(doctype)
+
+
 def _has_old_state() -> bool:
-	return bool(
-		frappe.db.exists("Installed Application", {"app_name": OLD_APP})
-		or frappe.db.exists("Module Def", {"app_name": OLD_APP})
+	installed = _table("Installed Application")
+	module_def = _table("Module Def")
+
+	has_installed = (
+		frappe.qb.from_(installed).select(installed.name).where(installed.app_name == OLD_APP).limit(1).run()
 	)
+	has_modules = (
+		frappe.qb.from_(module_def)
+		.select(module_def.name)
+		.where(module_def.app_name == OLD_APP)
+		.limit(1)
+		.run()
+	)
+	return bool(has_installed or has_modules)
 
 
-def _update(table: str, where: str, write: str, params: dict, label: str) -> int:
-	"""Run one write and report how many rows it touched.
-
-	The count is taken before the write rather than from ROW_COUNT(), which is
-	connection state and not reliable once frappe has issued anything of its own
-	in between.
-	"""
-	count = frappe.db.sql(f"select count(*) from `{table}` where {where}", params)[0][0]
-	if count:
-		frappe.db.sql(f"{write} where {where}", params)
-	print(f"  {label}: {count}")
-	return count
+def _names_where_app_is(doctype: str, column: str, value: str) -> list[str]:
+	table = _table(doctype)
+	return frappe.qb.from_(table).select(table.name).where(table[column] == value).run(pluck=True)
 
 
 def _rename_installed_app():
@@ -96,35 +108,28 @@ def _rename_installed_app():
 	frappe.get_installed_apps() reads them, and an entry naming a package that no
 	longer imports makes the site unbootable.
 	"""
-	if frappe.db.exists("Installed Application", {"app_name": NEW_APP}):
+	table = _table("Installed Application")
+	stale = _names_where_app_is("Installed Application", "app_name", OLD_APP)
+
+	if _names_where_app_is("Installed Application", "app_name", NEW_APP):
 		# A fresh install of the renamed app already registered itself; drop the
-		# stale row rather than ending up with the app listed twice.
-		_update(
-			"tabInstalled Application",
-			"app_name = %(old)s",
-			"delete from `tabInstalled Application`",
-			{"old": OLD_APP},
-			"stale Installed Application rows removed",
-		)
+		# old row rather than ending up with the app listed twice.
+		if stale:
+			frappe.qb.from_(table).delete().where(table.app_name == OLD_APP).run()
+		print(f"  stale Installed Application rows removed: {len(stale)}")
 		return
 
-	_update(
-		"tabInstalled Application",
-		"app_name = %(old)s",
-		"update `tabInstalled Application` set app_name = %(new)s",
-		{"old": OLD_APP, "new": NEW_APP},
-		"Installed Application rows updated",
-	)
+	if stale:
+		frappe.qb.update(table).set(table.app_name, NEW_APP).where(table.app_name == OLD_APP).run()
+	print(f"  Installed Application rows updated: {len(stale)}")
 
 
 def _rename_module_defs():
-	_update(
-		"tabModule Def",
-		"app_name = %(old)s",
-		"update `tabModule Def` set app_name = %(new)s",
-		{"old": OLD_APP, "new": NEW_APP},
-		"Module Def rows re-owned",
-	)
+	table = _table("Module Def")
+	names = _names_where_app_is("Module Def", "app_name", OLD_APP)
+	if names:
+		frappe.qb.update(table).set(table.app_name, NEW_APP).where(table.app_name == OLD_APP).run()
+	print(f"  Module Def rows re-owned: {len(names)}")
 
 
 def _rewrite_dotted_paths(doctype: str, field: str):
@@ -137,13 +142,19 @@ def _rewrite_dotted_paths(doctype: str, field: str):
 	if not frappe.db.exists("DocType", doctype):
 		return
 
-	_update(
-		f"tab{doctype}",
-		f"`{field}` like %(prefix)s",
-		f"update `tab{doctype}` set `{field}` = concat(%(new)s, substring(`{field}`, %(cut)s))",
-		{"new": NEW_APP, "cut": len(OLD_APP) + 1, "prefix": f"{OLD_APP}.%"},
-		f"{doctype}.{field} rewritten",
+	table = _table(doctype)
+	rows = (
+		frappe.qb.from_(table)
+		.select(table.name, table[field])
+		.where(table[field].like(f"{OLD_APP}.%"))
+		.run(as_dict=True)
 	)
+
+	for row in rows:
+		renamed = NEW_APP + row[field][len(OLD_APP) :]
+		frappe.db.set_value(doctype, row["name"], field, renamed, update_modified=False)
+
+	print(f"  {doctype}.{field} rewritten: {len(rows)}")
 
 
 def _rename_app_columns():
@@ -158,21 +169,16 @@ def _rename_app_columns():
 		try:
 			if not frappe.db.has_column(doctype, "app"):
 				continue
-			table = f"tab{doctype}"
-			count = frappe.db.sql(f"select count(*) from `{table}` where app = %(old)s", {"old": OLD_APP})[0][
-				0
-			]
-			if not count:
+			names = _names_where_app_is(doctype, "app", OLD_APP)
+			if not names:
 				continue
-			frappe.db.sql(
-				f"update `{table}` set app = %(new)s where app = %(old)s",
-				{"old": OLD_APP, "new": NEW_APP},
-			)
+			table = _table(doctype)
+			frappe.qb.update(table).set(table.app, NEW_APP).where(table.app == OLD_APP).run()
 		except Exception as e:  # a table the site never created
 			print(f"    skipped {doctype}: {e}")
 			continue
-		print(f"    {doctype}: {count}")
-		total += count
+		print(f"    {doctype}: {len(names)}")
+		total += len(names)
 	print(f"  `app` columns updated: {total}")
 
 
@@ -202,17 +208,21 @@ def _report_code_bearing():
 	for doctype, fields in CODE_BEARING.items():
 		if not frappe.db.exists("DocType", doctype):
 			continue
+		table = _table(doctype)
 		for field in fields:
 			try:
 				if not frappe.db.has_column(doctype, field):
 					continue
-				rows = frappe.db.sql(
-					f"select name from `tab{doctype}` where `{field}` like %(needle)s limit 25",
-					{"needle": f"%{OLD_APP}.%"},
+				names = (
+					frappe.qb.from_(table)
+					.select(table.name)
+					.where(table[field].like(f"%{OLD_APP}.%"))
+					.limit(25)
+					.run(pluck=True)
 				)
 			except Exception:
 				continue
-			findings.extend(f"{doctype} / {name} / {field}" for (name,) in rows)
+			findings.extend(f"{doctype} / {name} / {field}" for name in names)
 
 	if not findings:
 		print(f"\nNo customisation references {OLD_APP!r}.")
