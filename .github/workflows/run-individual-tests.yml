@@ -138,7 +138,7 @@ jobs:
           cp -r "${GITHUB_WORKSPACE}/.github/helper/site_config.json" ~/frappe-bench/sites/$site_name/site_config.json
           cd ~/frappe-bench/
           bench --site $site_name reinstall --yes
-          bench --site $site_name install-app hrms
+          bench --site $site_name install-app berp_hrms
           bench --site $site_name set-config allow_tests true
           bench --site $site_name run-tests --module ${{ matrix.test }} --lightmode
 

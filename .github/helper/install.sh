@@ -50,7 +50,7 @@ sed -i 's/redis_socketio:/# redis_socketio:/g' Procfile
 bench get-app "https://github.com/${frappeuser}/payments" --branch "$paymentsbranch"
 bench get-app "https://github.com/${frappeuser}/erpnext" --branch "$erpnextbranch" --resolve-deps
 bench get-app "https://github.com/${frappeuser}/lending" --branch "$lendingbranch"
-bench get-app hrms "${GITHUB_WORKSPACE}"
+bench get-app berp_hrms "${GITHUB_WORKSPACE}"
 bench setup requirements --dev
 
 bench start &>> ~/frappe-bench/bench_start.log &
@@ -58,4 +58,4 @@ CI=Yes bench build --app frappe &
 bench --site test_site reinstall --yes
 
 bench --verbose --site test_site install-app lending
-bench --verbose --site test_site install-app hrms
+bench --verbose --site test_site install-app berp_hrms

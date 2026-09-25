@@ -59,10 +59,10 @@ app.provide("$socket", socket)
 app.provide("$dayjs", dayjs)
 
 const registerServiceWorker = async () => {
-	window.frappePushNotification = new FrappePushNotification("hrms")
+	window.frappePushNotification = new FrappePushNotification("berp_hrms")
 
 	if ("serviceWorker" in navigator) {
-		let serviceWorkerURL = "/assets/hrms/frontend/sw.js"
+		let serviceWorkerURL = "/assets/berp_hrms/frontend/sw.js"
 		let config = ""
 
 		if (window.frappe?.boot?.push_relay_server_url) {
@@ -98,7 +98,7 @@ const registerServiceWorker = async () => {
 router.isReady().then(async () => {
 	if (import.meta.env.DEV) {
 		await frappeRequest({
-			url: "/api/method/hrms.www.hrms.get_context_for_dev",
+			url: "/api/method/berp_hrms.www.berp_hrms.get_context_for_dev",
 		}).then(async (values) => {
 			if (!window.frappe) window.frappe = {}
 			window.frappe.boot = values

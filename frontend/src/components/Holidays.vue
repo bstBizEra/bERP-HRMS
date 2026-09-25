@@ -79,7 +79,7 @@ const dayjs = inject("$dayjs")
 const __ = inject("$translate")
 
 const holidays = createResource({
-	url: "hrms.api.get_holidays_for_employee",
+	url: "berp_hrms.api.get_holidays_for_employee",
 	params: {
 		employee: employee.data.name,
 	},

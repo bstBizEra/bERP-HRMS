@@ -24,32 +24,32 @@ export default defineConfig({
 			},
 			manifest: {
 				display: "standalone",
-				name: "Frappe HR",
-				short_name: "Frappe HR",
-				start_url: "/hrms",
+				name: "bERP HR",
+				short_name: "bERP HR",
+				start_url: "/berp_hrms",
 				description: "Everyday HR & Payroll operations at your fingertips",
 				theme_color: "#ffffff",
 				icons: [
 					{
-						src: "/assets/hrms/manifest/manifest-icon-192.maskable.png",
+						src: "/assets/berp_hrms/manifest/manifest-icon-192.maskable.png",
 						sizes: "192x192",
 						type: "image/png",
 						purpose: "any",
 					},
 					{
-						src: "/assets/hrms/manifest/manifest-icon-192.maskable.png",
+						src: "/assets/berp_hrms/manifest/manifest-icon-192.maskable.png",
 						sizes: "192x192",
 						type: "image/png",
 						purpose: "maskable",
 					},
 					{
-						src: "/assets/hrms/manifest/manifest-icon-512.maskable.png",
+						src: "/assets/berp_hrms/manifest/manifest-icon-512.maskable.png",
 						sizes: "512x512",
 						type: "image/png",
 						purpose: "any",
 					},
 					{
-						src: "/assets/hrms/manifest/manifest-icon-512.maskable.png",
+						src: "/assets/berp_hrms/manifest/manifest-icon-512.maskable.png",
 						sizes: "512x512",
 						type: "image/png",
 						purpose: "maskable",
@@ -64,7 +64,7 @@ export default defineConfig({
 		},
 	},
 	build: {
-		outDir: "../hrms/public/frontend",
+		outDir: "../berp_hrms/public/frontend",
 		emptyOutDir: true,
 		target: "es2015",
 		commonjsOptions: {

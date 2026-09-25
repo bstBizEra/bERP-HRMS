@@ -1,3 +1,88 @@
+# bERP-HRMS — `berp_hrms/version-16`
+
+The **HRMS application of the bERP platform**, on its **released v16 line** — a
+downstream copy of [frappe/hrms](https://github.com/frappe/hrms) `version-16`,
+carrying its full upstream history.
+
+It installs into a bench as **`berp_hrms`**, not as `hrms`. That rename, the
+substitution rule behind it, and the in-place migration for a site that already
+has `hrms` installed are in
+[docs/RENAME_TO_BERP_HRMS.md](docs/RENAME_TO_BERP_HRMS.md).
+
+## Which branch you want
+
+| Branch | App slot | Upstream lane | Declares | Installable on |
+|---|---|---|---|---|
+| **`berp_hrms/version-16`** (this one) | `berp_hrms` | `version-16`, 16.19.0 | `frappe >=16.0.0,<17.0.0` | released v16 benches — the bERP development VM |
+| `main` | `berp_hrms` | `develop`, 17.0.0-dev | `frappe >=17.0.0-dev,<18.0.0` | the 17.0.0-dev development bench, which exists in CI |
+| `version-16` | **`hrms`** | `version-16`, 16.19.0 | `frappe >=16.0.0,<17.0.0` | tenants, as a drop-in replacement for upstream `hrms` |
+
+`version-16` is a different thing and is **not** superseded by this branch: it
+keeps `app_name = "hrms"` deliberately, so it drops into a tenant's existing
+`hrms` app slot with no migration at all. Its whole delta from upstream is two
+title strings. Use it when the goal is to rebrand what a tenant already runs.
+
+Use **this** branch when the goal is bERP's own HR app as a distinct app —
+`berp_hrms`, able to sit beside upstream `hrms` on one bench, pinned by
+`bstBizEra/bERP`'s `scripts/apps/pins.json`. Installing it onto a site that
+already has `hrms` is a migration, not an install.
+
+`main` and this branch share no bERP history; each was cut from its own upstream
+lane. A change wanted on both is applied to both, not merged between them.
+[docs/VERSION-16.md](docs/VERSION-16.md) explains the split, how this line
+relates to the upstream `hrms` the tenants run today, and how to install it —
+including on the development VM's Docker Compose stack, where `bench get-app`
+inside a container does not survive a restart.
+
+## What is not here
+
+`scripts/deploy-dev.sh`, `scripts/deploy-production.sh`, `scripts/setup-bench.sh`,
+`docs/LOCAL_SETUP.md`, `docs/DEPLOYMENT.md` and `docs/DEPLOYMENT_DEV.md` live on
+`main` and are **not** on this branch. Every one of them provisions a native
+Python 3.14 bench running frappe `develop` — the opposite of what this line is
+for. This branch is an application tree; something else provisions the bench.
+
+## Upstream
+
+- **Source:** https://github.com/frappe/hrms (branch `version-16`)
+- **Cut at:** upstream commit [`7e0fba4bf`](https://github.com/frappe/hrms/commit/7e0fba4bf11a63ac7b21a717610e235310815c1a) (16.19.0)
+- **Attribution and modification log:** [`NOTICE`](NOTICE)
+
+```bash
+git remote add upstream https://github.com/frappe/hrms.git   # one-time
+git fetch upstream version-16
+git merge upstream/version-16
+```
+
+That merge conflicts across the tree, because the app is named `berp_hrms` and
+upstream's is `hrms`. Resolving it means re-applying the rename to the incoming
+side — [docs/RENAME_TO_BERP_HRMS.md](docs/RENAME_TO_BERP_HRMS.md#the-substitution-rule)
+records the exact rule — and re-running `ruff` and `prettier` at the versions
+`.pre-commit-config.yaml` pins.
+
+Do that on a branch and let it go through review — never merge upstream directly
+on a server.
+
+## Security
+
+Static-analysis findings inherited from the upstream cut are triaged separately from
+findings introduced by bERP's own changes. The policy, the measured inventory for this
+tree, and the four controls that are still open are in
+[`docs/SECURITY-BASELINE.md`](docs/SECURITY-BASELINE.md).
+
+`semgrep ci` baselines against a pull request's base branch, so **a passing
+`Frappe Linter` check means no *new* findings, not a clean tree** — and a push with no
+pull request open runs no linter at all.
+
+## Licence
+
+GNU General Public License v3 — see [`license.txt`](license.txt). Copyright
+remains with Frappe Technologies Pvt. Ltd. and the upstream contributors, and any
+derivative work here remains GPL-3.0 licensed. GPL-3.0 is strong copyleft rather
+than permissive: distributing a derivative obliges you to offer its source.
+
+---
+
 <div align="center">
 	<a href="https://frappe.io/hr">
 		<img src=".github/frappe-hr-logo.png" height="80px" width="80px" alt="Frappe HR Logo">
@@ -8,9 +93,9 @@
 	</p>
 
 [![CI](https://github.com/frappe/hrms/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/frappe/hrms/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/frappe/hrms/branch/develop/graph/badge.svg?token=0TwvyUg3I5)](https://codecov.io/gh/frappe/hrms)
+[![codecov](https://codecov.io/gh/frappe/berp_hrms/branch/develop/graph/badge.svg?token=0TwvyUg3I5)](https://codecov.io/gh/frappe/berp_hrms)
 
-<a href="https://trendshift.io/repositories/10972" target="_blank"><img src="https://trendshift.io/api/badge/repositories/10972" alt="frappe%2Fhrms | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+<a href="https://trendshift.io/repositories/10972" target="_blank"><img src="https://trendshift.io/api/badge/repositories/10972" alt="frappe%2Fberp_hrms | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 </div>
 
 <div align="center">
@@ -65,7 +150,7 @@ You can try [Frappe Cloud](https://frappecloud.com), a simple, user-friendly and
 It takes care of installation, setup, upgrades, monitoring, maintenance and support of your Frappe deployments. It is a fully featured developer platform with an ability to manage and control multiple Frappe deployments.
 
 <div>
-	<a href="https://frappecloud.com/hrms/signup" target="_blank">
+	<a href="https://frappecloud.com/berp_hrms/signup" target="_blank">
 		<picture>
 			<source media="(prefers-color-scheme: dark)" srcset="https://frappe.io/files/try-on-fc-white.png">
 			<img src="https://frappe.io/files/try-on-fc-black.png" alt="Try on Frappe Cloud" height="28" />
@@ -79,7 +164,7 @@ It takes care of installation, setup, upgrades, monitoring, maintenance and supp
 You need Docker, docker-compose and git setup on your machine. Refer [Docker documentation](https://docs.docker.com/). After that, run the following commands:
 ```
 git clone https://github.com/frappe/hrms
-cd hrms/docker
+cd berp_hrms/docker
 docker-compose up
 ```
 
@@ -98,13 +183,13 @@ Use the following credentials to log in:
 	```
 2. In a separate terminal window, run the following commands
 	```sh
-	$ bench new-site hrms.local
+	$ bench new-site berp_hrms.local
 	$ bench get-app erpnext
-	$ bench get-app hrms
-	$ bench --site hrms.local install-app hrms
-	$ bench --site hrms.local add-to-hosts
+	$ bench get-app berp_hrms
+	$ bench --site berp_hrms.local install-app berp_hrms
+	$ bench --site berp_hrms.local add-to-hosts
 	```
-3. You can access the site at `http://hrms.local:8080`
+3. You can access the site at `http://berp_hrms.local:8080`
 
 ## Learning and Community
 

@@ -3,9 +3,9 @@
 *.egg-info
 *.swp
 tags
-hrms/public/dist
-hrms/public/node_modules
-hrms/docs/current
+berp_hrms/public/dist
+berp_hrms/public/node_modules
+berp_hrms/docs/current
 node_modules/
 dist/
 __pycache__/
@@ -15,8 +15,8 @@ __pycache__/
 .vs
 node_modules
 *debug.log
-hrms/docs/current
-hrms/public/frontend
-hrms/www/hrms.html
-hrms/public/roster
-hrms/www/roster.html
+berp_hrms/docs/current
+berp_hrms/public/frontend
+berp_hrms/www/berp_hrms.html
+berp_hrms/public/roster
+berp_hrms/www/roster.html

@@ -6,7 +6,7 @@ let employeesByID = reactive({})
 let employeesByUserID = reactive({})
 
 export const employees = createResource({
-	url: "hrms.api.get_all_employees",
+	url: "berp_hrms.api.get_all_employees",
 	auto: true,
 	transform(data) {
 		return data.map((employee) => {

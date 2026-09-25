@@ -1,16 +1,16 @@
 {
   "private": true,
-  "name": "hrms",
+  "name": "berp_hrms",
   "description": "Open Source HR & Payroll System powered by the Frappe Framework",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/frappe/hrms.git"
+    "url": "git+https://github.com/bstBizEra/bERP-HRMS.git"
   },
   "homepage": "https://frappe.io/hr",
-  "author": "Frappe Technologies Pvt. Ltd.",
+  "author": "bstBizEra",
   "license": "GPL-3.0",
   "bugs": {
-    "url": "https://github.com/frappe/hrms/issues"
+    "url": "https://github.com/bstBizEra/bERP-HRMS/issues"
   },
   "aworkspaces": ["frontend", "roster", "frappe-ui"],
   "scripts": {

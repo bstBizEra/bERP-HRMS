@@ -21,7 +21,7 @@ export type User = {
 // RESOURCES
 
 const user = createResource({
-	url: "hrms.api.get_current_user_info",
+	url: "berp_hrms.api.get_current_user_info",
 	auto: true,
 	onError() {
 		window.location.href = "/login?redirect-to=%2Fhr%2Froster";

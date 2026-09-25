@@ -1,0 +1,179 @@
+bERP HRMS — version-16 line
+Copyright (c) bstBizEra
+
+================================================================================
+UPSTREAM ATTRIBUTION
+================================================================================
+
+This product is a derivative work of Frappe HR.
+
+    Project:    Frappe HR (frappe/hrms)
+    Copyright:  Frappe Technologies Pvt. Ltd.
+    Source:     https://github.com/frappe/hrms
+    Homepage:   https://frappe.io/hr
+    Licence:    GNU General Public License v3.0
+
+This branch was cut from the upstream project at:
+
+    Commit:     7e0fba4bf11a63ac7b21a717610e235310815c1a
+    Dated:      2026-09-17
+    Lane:       version-16
+    Version:    16.19.0
+
+That is the same commit bstBizEra/bERP pins as `hrms` in
+scripts/apps/pins.json, so this fork and the app the tenants run today start
+from byte-identical upstream source.
+
+Upstream's full commit history is preserved: this branch descends from the
+upstream commit above rather than from a squash, so `git log` on any upstream
+file still shows its real authorship.
+
+================================================================================
+WHY THIS LINE EXISTS
+================================================================================
+
+bERP HRMS's `main` branch tracks upstream's develop lane and is 17.0.0-dev. It
+declares frappe >=17.0.0-dev,<18.0.0, and bench compares that with
+semantic_version, so it cannot be installed on a released v16 bench at all.
+
+Everything bERP runs outside CI is released v16:
+
+    bERP development VM        frappe 16.33.1, erpnext 16.34.2, no HR app
+    Tenants                    released v16, HR from upstream hrms@version-16
+
+This line declares frappe >=16.0.0,<17.0.0 and erpnext >=16.0.0,<17.0.0, which
+both of those satisfy. It is what makes bERP's own HR fork installable on a
+bench that exists.
+
+It does not replace the tenant app on its own. Tenant HR is upstream
+hrms@version-16 until bstBizEra/bERP's scripts/apps/pins.json says otherwise,
+and moving an existing site is a migration rather than an install --
+docs/RENAME_TO_BERP_HRMS.md has the runbook. docs/VERSION-16.md explains how
+this line, `main`, and upstream `hrms` relate.
+
+`main` and this branch share no bERP history. Each was cut from its own upstream
+lane, so a change wanted on both is applied to both rather than merged between
+them.
+
+NOT THE SAME AS THIS REPOSITORY'S `version-16` BRANCH. That branch was cut from
+the same upstream commit and does something deliberately smaller: it changes two
+title strings and leaves app_name as `hrms`, so it drops into a tenant's
+existing `hrms` app slot with no migration at all. It is live, and a tenant
+branding cutover pins it at 4be6d4e8bf0b964cb8f5d00ecf68f40889e779a0. This
+branch renames the app instead, which is what makes it a separate app slot and
+what makes installing it onto a site that already has `hrms` a migration. Both
+are wanted; they are not alternatives to each other.
+
+================================================================================
+LICENCE
+================================================================================
+
+Frappe HR is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+The full licence text is included in the license.txt file at the root of this
+repository.
+
+Note that this is the GPL-3.0, not the AGPL-3.0 that covers bstBizEra/bERP-CRM.
+The GPL's obligations attach to DISTRIBUTION of the software or of modified
+versions. It has no equivalent of AGPL section 13, so running a modified version
+as a network service, without distributing it, does not by itself oblige you to
+offer the corresponding source to its users.
+
+================================================================================
+BUNDLED COMPONENTS
+================================================================================
+
+frappe-ui
+    Source:   https://github.com/frappe/frappe-ui
+    Included: as a git submodule at ./frappe-ui
+    Commit:   863eaae9ada2edb287fc09fb21d05212bb5eebe9
+    Copyright: Frappe Technologies Pvt. Ltd.
+
+This module additionally depends on the Frappe Framework
+(https://github.com/frappe/frappe) and on ERPNext. On a v16 bench those are the
+released upstream lines; they are installed and managed by bench and are not
+vendored in this repository.
+
+================================================================================
+MODIFICATIONS FROM UPSTREAM
+================================================================================
+
+  Renamed -- the application installs as `berp_hrms`, not as `hrms`:
+
+      The Python package moved from hrms/ to berp_hrms/, and every lowercase
+      `hrms` token in the application tree became `berp_hrms`: imports and
+      dotted paths, patch paths, /assets/ URLs, desk bundle names, realtime and
+      cache keys, the PWA route, and the "app" field on Dock, Desktop Icon,
+      Workspace and Sidebar fixtures. Four spellings were deliberately kept --
+      github.com/frappe/hrms, the [org_name]/hrms example in config/docs.py, the
+      sk_hrms site-config key, and upstream's [frappe.hrms] Crowdin project id.
+      Outside the application tree the root hrms.png, the .github/hrms-*.png
+      screenshots and .github/helper/documentation.py were left as committed.
+
+      app_title became "bERP HR" and app_publisher became bstBizEra. Product
+      copy inside the application still reads "Frappe HR" and is unchanged.
+
+      No application logic was modified. Every change is a substitution of the
+      package name, and `git log` on any file still shows its upstream
+      authorship. The repository's own formatters were then re-run at the
+      versions .pre-commit-config.yaml pins, because the longer package name
+      pushes some import blocks and call expressions past the configured widths.
+
+      The consequence is that `git merge upstream/version-16` now conflicts
+      across the tree; docs/RENAME_TO_BERP_HRMS.md records the exact
+      substitution rule so a sync reproduces it rather than inventing one.
+
+      Two comment-only exceptions: hooks.py and api/oauth.py each carry a
+      `# nosemgrep` annotation, because rewriting the package name inside the
+      flagged code made two already-triaged inherited findings read as new ones
+      to semgrep. docs/SECURITY-BASELINE.md records the exception, and measures
+      that the rename introduced no new finding: 87 on the unmodified upstream
+      tree, 85 here, the difference being exactly those two. No executable line
+      changed.
+
+  Added:
+      berp_hrms/rename_migration.py   In-place hrms -> berp_hrms migration for a
+                                      site that already has hrms installed
+      berp_hrms/commands.py           Registers `bench rename-from-hrms`, the
+                                      only way to reach that migration: bench
+                                      execute refuses a dotted path in an app
+                                      the site has not installed yet
+      docs/VERSION-16.md              What this line is for, and how to install
+                                      it on a v16 bench
+      docs/RENAME_TO_BERP_HRMS.md     The substitution rule and the site runbook
+      docs/SECURITY-BASELINE.md       Inherited-findings policy and inventory
+      .github/workflows/README.md     Which inherited workflows were removed
+      NOTICE
+
+  Removed -- seven workflows that operated upstream's project rather than this
+  one, three of which held contents: write:
+      build-and-commit-assets.yml     on_release.yml
+      build_image.yml                 release_notes.yml
+      generate-pot-file.yml           stale.yml
+      initiate_release.yml
+
+  Modified:
+      .github/workflows/patch.yml     The v14 dump CI restores is a site with
+                                      UPSTREAM `hrms` installed. The historical
+                                      legs now run against upstream hrms, and
+                                      the swap to this repository happens
+                                      through `bench rename-from-hrms` -- the
+                                      path a real site takes.
+      .github/workflows/labeller.yml  Granted pull-requests: write. The default
+                                      token is read-only, so the action failed
+                                      the first time a pull request matched a
+                                      rule in .github/labeler.yml.
+
+  Deliberately NOT carried over from `main`: scripts/deploy-dev.sh,
+  scripts/deploy-production.sh, scripts/setup-bench.sh,
+  scripts/install-berp-apps.sh, docs/LOCAL_SETUP.md, docs/DEPLOYMENT.md,
+  docs/DEPLOYMENT_DEV.md and the docker/ changes. All of them provision a native
+  Python 3.14 bench running frappe develop, which is precisely what this line is
+  not for. docs/VERSION-16.md says so and gives the v16 install instead.

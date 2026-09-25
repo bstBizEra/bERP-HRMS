@@ -35,7 +35,7 @@ const shiftRequest = ref({})
 
 // get form fields
 const formFields = createResource({
-	url: "hrms.api.get_doctype_fields",
+	url: "berp_hrms.api.get_doctype_fields",
 	params: { doctype: "Shift Request" },
 	auto: true,
 	transform(data) {
@@ -47,7 +47,7 @@ const formFields = createResource({
 })
 
 createResource({
-	url: "hrms.api.get_shift_request_approvers",
+	url: "berp_hrms.api.get_shift_request_approvers",
 	params: { employee: employee.data.name },
 	auto: !props.id,
 	onSuccess(data) {

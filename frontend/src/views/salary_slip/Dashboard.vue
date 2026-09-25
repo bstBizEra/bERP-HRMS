@@ -133,7 +133,7 @@ watch(
 )
 
 onMounted(() => {
-	socket.on("hrms:update_salary_slips", (data) => {
+	socket.on("berp_hrms:update_salary_slips", (data) => {
 		if (data.employee === employee.data.name) {
 			documents.reload()
 		}
@@ -141,6 +141,6 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-	socket.off("hrms:update_salary_slips")
+	socket.off("berp_hrms:update_salary_slips")
 })
 </script>

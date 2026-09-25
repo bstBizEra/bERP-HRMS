@@ -8,7 +8,7 @@ repos:
     rev: v4.0.1
     hooks:
       - id: trailing-whitespace
-        files: "hrms.*"
+        files: "berp_hrms.*"
         exclude: ".*json$|.*txt$|.*csv|.*md"
       - id: check-yaml
       - id: no-commit-to-branch
@@ -25,12 +25,12 @@ repos:
         exclude: |
             (?x)^(
                 frontend/.*|
-                hrms/public/dist/.*|
+                berp_hrms/public/dist/.*|
                 .*node_modules.*|
                 .*boilerplate.*|
-                hrms/templates/includes/.*|
-                hrms/hr/doctype/employee_promotion/employee_promotion.js|
-                hrms/hr/doctype/employee_transfer/employee_transfer.js|
+                berp_hrms/templates/includes/.*|
+                berp_hrms/hr/doctype/employee_promotion/employee_promotion.js|
+                berp_hrms/hr/doctype/employee_transfer/employee_transfer.js|
             )$
 
   - repo: https://github.com/astral-sh/ruff-pre-commit

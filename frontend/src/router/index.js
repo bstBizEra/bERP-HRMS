@@ -90,7 +90,7 @@ const routes = [
 ]
 
 const router = createRouter({
-	history: createWebHistory("/hrms"),
+	history: createWebHistory("/berp_hrms"),
 	routes,
 })
 

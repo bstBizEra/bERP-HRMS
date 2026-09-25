@@ -119,9 +119,9 @@ const DAYS = [
 
 //resources
 const calendarEvents = createResource({
-	url: "hrms.api.get_attendance_calendar_events",
+	url: "berp_hrms.api.get_attendance_calendar_events",
 	auto: true,
-	cache: "hrms:attendance_calendar_events",
+	cache: "berp_hrms:attendance_calendar_events",
 	makeParams() {
 		return {
 			from_date: firstOfMonth.value.format("YYYY-MM-DD"),
