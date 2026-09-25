@@ -17,12 +17,33 @@ between a private bench and a public one.
 | `developer_mode` | 1 | 0 |
 | Access | SSH tunnel | public hostname |
 
+## This is not the VM bERP already runs
+
+> **Verified on the bERP development VM, 2026-09-26.** `berp-linux` holds a
+> **Docker Compose** deployment — `/srv/berp/deployments/dev/compose.json`,
+> eight running containers — on **released frappe 16.33.1 and ERPNext 16.34.2**,
+> with `berp_branding` and `berp_lao` installed and no HR app at all.
+>
+> This script provisions a **native bench** at that same path, with its own
+> MariaDB, Redis and a `berp-dev.service` systemd unit. Pointed at that VM it
+> would `bench init` into a live deployment directory and run a service
+> competing with the compose stack. It now refuses to start when `BENCH_DIR`
+> exists and is not a bench, but the safer answer is not to aim it there.
+>
+> `berp_hrms` does not belong on that VM either: it is `17.0.0-dev` and
+> declares `frappe >=17.0.0-dev,<18.0.0`, which 16.33.1 does not satisfy.
+> `bench validate-dependencies` fails on it, and `bench get-app` only warns —
+> so it may install and then misbehave, which is worse than a refusal. Testing
+> `berp_hrms` there needs a `version-16` line of this repository cut from
+> upstream `version-16`; see
+> [bERP `scripts/apps/README.md`](https://github.com/bstBizEra/bERP/blob/dev/scripts/apps/README.md#berp_hrms).
+
 ## Layout
 
 | | Default |
 |---|---|
 | Service user | `berp` (home `/srv/berp`) |
-| Bench | `/srv/berp/deployments/dev` |
+| Bench | `/srv/berp/deployments/dev` (native bench — **not** the compose path above) |
 | Secrets | `/srv/berp/secrets/dev` |
 | Site | `dev.berp.bizera.la` |
 | Endpoint | `http://127.0.0.1:8080` (inside the VM) |

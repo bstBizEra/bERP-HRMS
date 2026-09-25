@@ -68,6 +68,32 @@ for value in "${BENCH_DIR}" "${SITE_NAME}" "${SECRETS_DIR}" "$(hostname -f 2>/de
 done
 
 # ---------------------------------------------------------------------------
+# Refuse to build a bench on top of something that is not one
+# ---------------------------------------------------------------------------
+# This script provisions a NATIVE bench (bench init, a systemd unit, MariaDB and
+# Redis on the host). The bERP development VM verified on 2026-09-26 holds a
+# DOCKER COMPOSE deployment at exactly this path -- /srv/berp/deployments/dev/
+# compose.json, eight running containers -- and running this against it would
+# `bench init` into a live deployment directory and install a berp-dev.service
+# competing with the compose stack.
+#
+# An existing bench is fine: every stage below is idempotent. Anything else is
+# refused, because there is no safe way to tell what it is.
+if [[ -e "${BENCH_DIR}" ]]; then
+	found="$(ls -A "${BENCH_DIR}" 2>/dev/null | head -5 | tr '\n' ' ')"
+	if [[ -d "${BENCH_DIR}/apps" && -d "${BENCH_DIR}/sites" ]]; then
+		echo "Existing bench at ${BENCH_DIR}; stages already satisfied will be skipped."
+	elif [[ -z "${found}" ]]; then
+		: # An empty directory is not a deployment; bench init is happy with it.
+	else
+		die "${BENCH_DIR} exists but is not a bench (no apps/ and sites/). It holds: ${found}
+   A Docker Compose deployment lives here on the bERP development VM. This
+   script provisions a native bench and would fight it. Point BENCH_DIR
+   somewhere else, or deploy into the compose stack instead."
+	fi
+fi
+
+# ---------------------------------------------------------------------------
 # Secrets
 # ---------------------------------------------------------------------------
 gen_pw() { openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 24; }
