@@ -15,6 +15,31 @@ The imported upstream tree is bERP HRMS's **security baseline**. It tracks
 
 This mirrors the policy in `bstBizEra/bERP-CRM`, so both modules are triaged the same way.
 
+### The one exception, and why it was granted
+
+Two `# nosemgrep` annotations exist in upstream source. They are the only ones, and they
+were added deliberately rather than as a shortcut past a red check.
+
+| File | Rule | Verdict |
+|---|---|---|
+| `berp_hrms/hooks.py` | `override-doctype-class` | Upstream's design, unchanged here |
+| `berp_hrms/api/oauth.py` | `security.guest-whitelisted-method` | [ACCEPTED below](#priority-3--securityguest-whitelisted-method-4) |
+
+The app rename (`hrms` → `berp_hrms`, see
+[RENAME_TO_BERP_HRMS.md](RENAME_TO_BERP_HRMS.md)) rewrote the dotted paths inside
+`override_doctype_class` and the route `oauth_providers` passes to
+`get_oauth2_authorize_url`. `semgrep ci` fingerprints a finding by its *matched text*, so
+changing that text makes an inherited finding read as a new one — permanently, for these
+two, on every pull request that touches either file.
+
+The no-modification rule exists because divergence "would conflict on every upstream sync".
+The rename already guarantees that for every file in the tree, so the reason the rule was
+written for no longer distinguishes these two lines. Both findings already had a written
+verdict; the annotations cite it rather than replacing it.
+
+This is not a precedent for silencing a finding that has no verdict. A new finding still
+blocks, and an inherited one with no triage entry still gets triaged rather than annotated.
+
 ## How the Semgrep gate behaves
 
 `.github/workflows/linters.yml` runs `semgrep ci` against
@@ -68,7 +93,7 @@ pull-request-scoped CI view. **58 findings: 16 at ERROR severity, 42 at WARNING.
 | `security.frappe-ssti` | `hr/doctype/interview/interview.py:279`, `:330` |
 | `security.frappe-ssti` | `hr/doctype/leave_application/leave_application.py:724`, `:725`, `:750`, `:751` |
 | `security.frappe-ssti` | `payroll/doctype/salary_slip/salary_slip.py:2264`, `:2265` |
-| `security.guest-whitelisted-method` | `api/oauth.py:4`, `api/system_settings.py:4`, `utils/__init__.py:11`, `www/berp_hrms.py:17` |
+| `security.guest-whitelisted-method` | `api/oauth.py:10`, `api/system_settings.py:4`, `utils/__init__.py:11`, `www/berp_hrms.py:17` |
 | `security.relaxed-permissions` | `hr/doctype/expense_claim/expense_claim.json:594`, `hr/doctype/leave_application/leave_application.json:290`, `hr/doctype/leave_ledger_entry/leave_ledger_entry.json:175` |
 | `security.frappe-sql-format-injection` | `hr/doctype/interview/interview.py:429` |
 | `security.frappe-security-file-traversal` | `overrides/company.py:94` |
@@ -151,7 +176,7 @@ worth proposing to `frappe/hrms`.
 
 | Endpoint | Verdict |
 | --- | --- |
-| `api/oauth.py:4` `oauth_providers` | ACCEPTED |
+| `api/oauth.py:10` `oauth_providers` | ACCEPTED |
 | `api/system_settings.py:4` `get_user_pass_login_disabled` | ACCEPTED |
 | `www/berp_hrms.py:17` `get_context_for_dev` | ACCEPTED **only while `developer_mode` is off** |
 | `utils/__init__.py:11` `get_country` | **NEEDS HARDENING** |

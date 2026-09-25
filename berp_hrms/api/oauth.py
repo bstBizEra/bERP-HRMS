@@ -1,6 +1,12 @@
 import frappe
 
 
+# frappe-semgrep-rules security.guest-whitelisted-method. Reviewed and ACCEPTED
+# in docs/SECURITY-BASELINE.md: this returns provider names, icons and authorize
+# URLs, never the client secret. The app rename changed the route this passes to
+# get_oauth2_authorize_url, which is what made semgrep treat an inherited
+# finding as new.
+# nosemgrep
 @frappe.whitelist(allow_guest=True)
 def oauth_providers():
 	from frappe.utils.html_utils import get_icon_html

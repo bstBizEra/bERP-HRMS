@@ -145,6 +145,12 @@ MODIFICATIONS FROM UPSTREAM
       conflicts across the tree; docs/RENAME_TO_BERP_HRMS.md records the exact
       substitution rule so a sync reproduces it rather than inventing one.
 
+      Two comment-only exceptions: hooks.py and api/oauth.py each carry a
+      `# nosemgrep` annotation, because rewriting the package name inside the
+      flagged code made two already-triaged inherited findings read as new ones
+      to semgrep. docs/SECURITY-BASELINE.md records the exception and why it
+      was granted. No executable line changed.
+
   Added -- deployment and setup tooling, none of which exists upstream:
       scripts/setup-bench.sh          Local bench provisioning
       scripts/install-berp-apps.sh    Shared app assembly: erpnext (bERP),

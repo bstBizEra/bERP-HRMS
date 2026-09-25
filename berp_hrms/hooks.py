@@ -161,6 +161,10 @@ has_upload_permission = {"Employee": "erpnext.setup.doctype.employee.employee.ha
 # ---------------
 # Override standard doctype classes
 
+# frappe-semgrep-rules override-doctype-class. Upstream's design, unchanged
+# here; the app rename only rewrote the dotted paths, which is what made semgrep
+# treat an inherited finding as new. See docs/SECURITY-BASELINE.md.
+# nosemgrep
 override_doctype_class = {
 	"Employee": "berp_hrms.overrides.employee_master.EmployeeMaster",
 	"Timesheet": "berp_hrms.overrides.employee_timesheet.EmployeeTimesheet",
