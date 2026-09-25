@@ -95,7 +95,7 @@ const toTitleCase = (str: string) =>
 // RESOURCES
 
 const defaultCompany = createResource({
-	url: "hrms.api.roster.get_default_company",
+	url: "berp_hrms.api.roster.get_default_company",
 	auto: true,
 	onSuccess: () => {
 		["company", "branch", "designation", "shift_type", "shift_location"].forEach((field) =>

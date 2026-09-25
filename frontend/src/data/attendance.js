@@ -47,13 +47,13 @@ const transformShiftRequests = (data) =>
 	})
 
 export const myAttendanceRequests = createResource({
-	url: "hrms.api.get_attendance_requests",
+	url: "berp_hrms.api.get_attendance_requests",
 	params: {
 		employee: employeeResource.data.name,
 		limit: 10,
 	},
 	auto: true,
-	cache: "hrms:my_attendance_requests",
+	cache: "berp_hrms:my_attendance_requests",
 	transform(data) {
 		return transformAttendanceRequests(data)
 	}
@@ -67,20 +67,20 @@ const transformAttendanceRequests = (data) => {
 		})
 }
 export const myShiftRequests = createResource({
-	url: "hrms.api.get_shift_requests",
+	url: "berp_hrms.api.get_shift_requests",
 	params: {
 		employee: employeeResource.data.name,
 		limit: 10,
 	},
 	auto: true,
-	cache: "hrms:my_shift_requests",
+	cache: "berp_hrms:my_shift_requests",
 	transform(data) {
 		return transformShiftRequests(data)
 	},
 })
 
 export const teamShiftRequests = createResource({
-	url: "hrms.api.get_shift_requests",
+	url: "berp_hrms.api.get_shift_requests",
 	params: {
 		employee: employeeResource.data.name,
 		approver_id: employeeResource.data.user_id,
@@ -88,20 +88,20 @@ export const teamShiftRequests = createResource({
 		limit: 10,
 	},
 	auto: true,
-	cache: "hrms:team_shift_requests",
+	cache: "berp_hrms:team_shift_requests",
 	transform(data) {
 		return transformShiftRequests(data)
 	},
 })
 export const teamAttendanceRequests = createResource({
-	url: "hrms.api.get_attendance_requests",
+	url: "berp_hrms.api.get_attendance_requests",
 	params: {
 		employee: employeeResource.data.name,
 		for_approval: 1,
 		limit: 10,
 	},
 	auto: true,
-	cache: "hrms:team_attendance_requests",
+	cache: "berp_hrms:team_attendance_requests",
 	transform: (data) => {
 		return transformAttendanceRequests(data)
 	},

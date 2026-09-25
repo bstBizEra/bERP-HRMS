@@ -3,6 +3,11 @@
 The **HRMS application of the bERP platform** — a downstream copy of
 [frappe/hrms](https://github.com/frappe/hrms), carrying its full upstream history.
 
+It installs into a bench as **`berp_hrms`**, not as `hrms`. That rename, the
+substitution rule behind it, and the in-place migration for a site that already
+has `hrms` installed are in
+[docs/RENAME_TO_BERP_HRMS.md](docs/RENAME_TO_BERP_HRMS.md).
+
 ## Where this sits
 
 bERP is assembled two different ways, and this repository belongs to one of them.
@@ -14,7 +19,7 @@ this module is installed:
 |---|---|---|
 | `frappe` | [frappe/frappe](https://github.com/frappe/frappe) `develop` | Framework |
 | `erpnext` | [bstBizEra/bERP](https://github.com/bstBizEra/bERP) | Platform — **bERP is ERPNext** |
-| **`hrms`** | **this repository** | **HR and Payroll** |
+| **`berp_hrms`** | **this repository** | **HR and Payroll** |
 | `crm` | [bstBizEra/bERP-CRM](https://github.com/bstBizEra/bERP-CRM) | CRM |
 | `berp_branding` | inside `bERP` | Branding |
 | `berp_lao` | inside `bERP` | Lao localisation |
@@ -36,7 +41,7 @@ So a change made here does not reach a customer until the platform's tenant line
 moves to this module. [`NOTICE`](NOTICE) carries the version bounds and why the
 develop lane is the only one installable on the development bench.
 
-`hrms` also depends on it: `hooks.py` declares
+`berp_hrms` also depends on it: `hooks.py` declares
 `required_apps = ["frappe/erpnext"]`, and roughly 108 modules import `erpnext`
 directly.
 
@@ -72,15 +77,21 @@ misleading, because the framework this depends on will not build below 3.14.
 - **Imported at:** upstream commit [`32a4d0097`](https://github.com/frappe/hrms/commit/32a4d0097)
 - **Attribution and modification log:** [`NOTICE`](NOTICE) — the exact upstream commit, the
   `frappe-ui` submodule pin, why this module tracks the develop lane rather than upstream's
-  stable one, and every file bERP added, removed or changed. Nothing under `hrms/` is modified.
+  stable one, and every file bERP added, removed or changed.
 
-Full upstream history is preserved, so releases merge normally:
+Full upstream history is preserved, so the merge base is real:
 
 ```bash
 git remote add upstream https://github.com/frappe/hrms.git   # one-time
 git fetch upstream develop
 git merge upstream/develop
 ```
+
+Since the app is named `berp_hrms` and upstream's is `hrms`, that merge
+conflicts across the tree rather than applying cleanly. Resolving it means
+re-applying the rename to the incoming side;
+[docs/RENAME_TO_BERP_HRMS.md](docs/RENAME_TO_BERP_HRMS.md#the-substitution-rule)
+records the exact rule so every sync reproduces it instead of inventing one.
 
 Do that on a branch and let it go through review — never merge upstream directly
 on a server.

@@ -245,7 +245,7 @@ const employeeDoc = createDocumentResource({
 })
 
 const reportsToName = createResource({
-	url: "hrms.api.get_reports_to_employee_name",
+	url: "berp_hrms.api.get_reports_to_employee_name",
 })
 
 watch(
@@ -258,7 +258,7 @@ watch(
 )
 
 const employeeDocType = createResource({
-	url: "hrms.api.get_doctype_fields",
+	url: "berp_hrms.api.get_doctype_fields",
 	params: { doctype: DOCTYPE },
 	auto: true,
 })

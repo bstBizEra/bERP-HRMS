@@ -4,7 +4,7 @@
 # Re-running is cheap - every stage is skipped if it is already done.
 set -euo pipefail
 
-SITE_NAME="${SITE_NAME:-hrms.localhost}"
+SITE_NAME="${SITE_NAME:-berp.localhost}"
 FRAPPE_BRANCH="${FRAPPE_BRANCH:-develop}"
 ERPNEXT_BRANCH="${ERPNEXT_BRANCH:-develop}"
 PYTHON_VERSION="${PYTHON_VERSION:-3.14}"
@@ -44,18 +44,18 @@ bench set-redis-socketio-host redis://redis:6379
 sed -i '/redis/d' ./Procfile
 sed -i '/watch/d' ./Procfile
 
-log "Installing erpnext (hrms declares it in required_apps)"
+log "Installing erpnext (berp_hrms declares it in required_apps)"
 bench get-app --skip-assets --branch "${ERPNEXT_BRANCH}" erpnext
 
-log "Installing hrms from the mounted repository"
-# Staged as `hrms` because bench names the app after the directory basename.
+log "Installing berp_hrms from the mounted repository"
+# Staged as `berp_hrms` because bench names the app after the directory basename.
 mkdir -p /home/frappe/src
 git config --global --add safe.directory "${REPO}"
 git config --global --add safe.directory "${REPO}/.git"
-rm -rf /home/frappe/src/hrms
-git clone -q "${REPO}" /home/frappe/src/hrms
-bench get-app --skip-assets /home/frappe/src/hrms
-rm -rf /home/frappe/src/hrms
+rm -rf /home/frappe/src/berp_hrms
+git clone -q "${REPO}" /home/frappe/src/berp_hrms
+bench get-app --skip-assets /home/frappe/src/berp_hrms
+rm -rf /home/frappe/src/berp_hrms
 
 log "Creating site ${SITE_NAME}"
 bench new-site "${SITE_NAME}" \
@@ -64,7 +64,7 @@ bench new-site "${SITE_NAME}" \
 	--admin-password "${ADMIN_PASSWORD}" \
 	--set-default
 
-bench --site "${SITE_NAME}" install-app erpnext hrms
+bench --site "${SITE_NAME}" install-app erpnext berp_hrms
 bench --site "${SITE_NAME}" set-config developer_mode 1
 bench --site "${SITE_NAME}" enable-scheduler
 bench --site "${SITE_NAME}" clear-cache

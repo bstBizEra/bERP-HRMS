@@ -21,13 +21,13 @@ export const getLeaveDates = (leave) => {
 }
 
 export const myLeaves = createResource({
-	url: "hrms.api.get_leave_applications",
+	url: "berp_hrms.api.get_leave_applications",
 	params: {
 		employee: employeeResource.data.name,
 		limit: 10,
 	},
 	auto: true,
-	cache: "hrms:my_leaves",
+	cache: "berp_hrms:my_leaves",
 	transform(data) {
 		return transformLeaveData(data)
 	},
@@ -37,7 +37,7 @@ export const myLeaves = createResource({
 })
 
 export const teamLeaves = createResource({
-	url: "hrms.api.get_leave_applications",
+	url: "berp_hrms.api.get_leave_applications",
 	params: {
 		employee: employeeResource.data.name,
 		approver_id: employeeResource.data.user_id,
@@ -45,16 +45,16 @@ export const teamLeaves = createResource({
 		limit: 10,
 	},
 	auto: true,
-	cache: "hrms:team_leaves",
+	cache: "berp_hrms:team_leaves",
 	transform(data) {
 		return transformLeaveData(data)
 	},
 })
 
 export const leaveBalance = createResource({
-	url: "hrms.api.get_leave_balance_map",
+	url: "berp_hrms.api.get_leave_balance_map",
 	auto: true,
-	cache: "hrms:leave_balance",
+	cache: "berp_hrms:leave_balance",
 	transform: (data) => {
 		// Calculate balance percentage for each leave type
 		return Object.fromEntries(

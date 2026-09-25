@@ -11,7 +11,7 @@ export function useDownloadPDF() {
 			headers["X-Frappe-CSRF-Token"] = window.csrf_token
 		}
 
-		fetch("/api/method/hrms.api._download_pdf", {
+		fetch("/api/method/berp_hrms.api._download_pdf", {
 			method: "POST",
 			headers,
 			body: new URLSearchParams({ doctype: doctype, docname: docname }),

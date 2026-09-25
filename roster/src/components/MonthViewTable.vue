@@ -387,7 +387,7 @@ const hasSameShift = (employee: string, day: string) =>
 // RESOURCES
 
 const events = createResource({
-	url: "hrms.api.roster.get_events",
+	url: "berp_hrms.api.roster.get_events",
 	auto: true,
 	makeParams() {
 		return {
@@ -414,7 +414,7 @@ const events = createResource({
 defineExpose({ events });
 
 const swapShift = createResource({
-	url: "hrms.api.roster.swap_shift",
+	url: "berp_hrms.api.roster.swap_shift",
 	makeParams() {
 		return {
 			src_shift: hoveredCell.value.shift,

@@ -213,7 +213,7 @@ const document = createDocumentResource({
 })
 
 const attachedFiles = createResource({
-	url: "hrms.api.get_attachments",
+	url: "berp_hrms.api.get_attachments",
 	params: {
 		dt: props.modelValue.doctype,
 		dn: props.modelValue.name,
@@ -227,7 +227,7 @@ const docPermissions = createResource({
 })
 
 const permittedWriteFields = createResource({
-	url: "hrms.api.get_permitted_fields_for_write",
+	url: "berp_hrms.api.get_permitted_fields_for_write",
 	params: { doctype: props.modelValue.doctype },
 	auto: true,
 })
